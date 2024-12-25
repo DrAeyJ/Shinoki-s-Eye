@@ -4,6 +4,22 @@ import time
 import pygame
 
 
+class Player:
+    def __init__(self):
+        self.x_pos = 0
+        self.y_pos = 0
+
+        global active_entities
+        active_entities.append(self)
+
+    def render(self, scr):
+        soul = pygame.sprite.Sprite(entity_spr)
+        soul.image = load_image("Start_scr_sprites/King1.png")
+        soul.rect = soul.image.get_rect()
+        soul.rect.x = 104 + 49 * self.x_pos
+        soul.rect.y = 5 + 49 * self.y_pos
+
+
 class Starting_screen:
     def __init__(self):
         global active_scr
@@ -47,12 +63,20 @@ class Starting_screen:
 
 class Options:
     def __init__(self):
+        global start_scr_active
+        start_scr_active = False
+
         global active_scr
         active_scr = self
 
 
 class PreGameRoom:
     def __init__(self):
+        global start_scr_active
+        start_scr_active = False
+
+        self.player = Player()
+
         global active_scr
         active_scr = self
 
@@ -60,17 +84,23 @@ class PreGameRoom:
         screen.fill((0, 0, 0))
         pregamewait = True
 
-        self.board = [[0] * 12 for _ in range(12)]
+        self.board = [[0] * 10 for _ in range(10)]
         self.left = 104
-        self.top = 4
-        self.cell_size = 41
+        self.top = 5
+        self.cell_size = 49
 
     def render(self, scr):
-        for y in range(12):
-            for x in range(12):
-                pygame.draw.rect(screen, pygame.Color(0, 79, 153), (
-                    x * self.cell_size + self.left, y * self.cell_size + self.top,
-                    self.cell_size, self.cell_size), 1)
+        entity_spr.draw(scr)
+        global pregamewait
+        if not pregamewait:
+            for y in range(10):
+                for x in range(10):
+                    pygame.draw.rect(screen, pygame.Color(0, 79, 153), (
+                        x * self.cell_size + self.left, y * self.cell_size + self.top,
+                        self.cell_size, self.cell_size), 1)
+        elif pregamewait:
+            time.sleep(3)
+            pregamewait = False
 
 
 class Ingame_Settings:
@@ -118,21 +148,31 @@ screen = pygame.display.set_mode(size)
 pygame.display.set_caption("Shinoki`s Eye")
 
 start_scr_sprites_group = pygame.sprite.Group()
+entity_spr = pygame.sprite.Group()
 
 start_scr = Starting_screen()
 active_scr = start_scr
+start_scr_active = True
+
+active_entities = []
+
 pregamewait = False
+
 running = True
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         key = pygame.key.get_pressed()
-        if key[pygame.K_ESCAPE]:
+        if key[pygame.K_ESCAPE] and not start_scr_active:
             Ingame_Settings()
-        if pregamewait:
-            screen.fill((0, 0, 0))
+        if key[pygame.K_ESCAPE] and start_scr_active:
+            sys.exit()
     screen.fill((0, 0, 0))
+
     active_scr.render(screen)
+    for i in active_entities:
+        i.render(screen)
+
     pygame.display.flip()
 pygame.quit()
