@@ -5,9 +5,9 @@ import pygame
 
 
 class Player:
-    def __init__(self):
-        self.x_pos = 0
-        self.y_pos = 0
+    def __init__(self, board):
+        self.running_pl = True
+        self.board = board
 
         global active_entities
         active_entities.append(self)
@@ -16,8 +16,19 @@ class Player:
         soul = pygame.sprite.Sprite(entity_spr)
         soul.image = load_image("Start_scr_sprites/King1.png")
         soul.rect = soul.image.get_rect()
-        soul.rect.x = 104 + 49 * self.x_pos
-        soul.rect.y = 5 + 49 * self.y_pos
+        soul.rect.x = 275 + 65 * self.board.player_x
+        soul.rect.y = 25 + 65 * self.board.player_y
+
+
+class Wall:
+    def __init__(self, location, x, y):
+        self.hp = 3
+        self.location = location
+        self.x = x
+        self.y = y
+
+    def breaking(self, board):
+        del board[self.y][self.x]
 
 
 class Starting_screen:
@@ -75,19 +86,28 @@ class PreGameRoom:
         global start_scr_active
         start_scr_active = False
 
-        self.player = Player()
+        self.player = Player(self)
+        self.player_x = 0
+        self.player_y = 0
 
         global active_scr
         active_scr = self
 
-        global pregamewait
-        screen.fill((0, 0, 0))
-        pregamewait = True
-
         self.board = [[0] * 10 for _ in range(10)]
-        self.left = 104
-        self.top = 5
-        self.cell_size = 49
+        self.left = 275
+        self.top = 25
+        self.cell_size = 65
+
+        for _ in pygame.event.get():
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_w]:
+                self.player_y -= 1
+            elif keys[pygame.K_a]:
+                self.player_x -= 1
+            elif keys[pygame.K_s]:
+                self.player_x += 1
+            elif keys[pygame.K_d]:
+                self.player_y += 1
 
     def render(self, scr):
         entity_spr.draw(scr)
@@ -101,6 +121,27 @@ class PreGameRoom:
         elif pregamewait:
             time.sleep(3)
             pregamewait = False
+
+    def enter_game(self):
+        if (self.player.x_pos == 9
+                and self.player.y_pos in [6, 7]):
+            Game()
+
+
+class Game:
+    def __init__(self):
+        global start_scr_active
+        start_scr_active = False
+
+        self.player = Player()
+
+        global active_scr
+        active_scr = self
+
+        self.board = [[0] * 10 for _ in range(10)]
+        self.left = 275
+        self.top = 25
+        self.cell_size = 65
 
 
 class Ingame_Settings:
@@ -143,7 +184,7 @@ def load_image(nm, colorkey=None):
 
 
 pygame.init()
-size = 700, 500
+size = 1200, 700
 screen = pygame.display.set_mode(size)
 pygame.display.set_caption("Shinoki`s Eye")
 
@@ -168,6 +209,8 @@ while running:
             Ingame_Settings()
         if key[pygame.K_ESCAPE] and start_scr_active:
             sys.exit()
+        if Player:
+            Player.x_pos = 0
     screen.fill((0, 0, 0))
 
     active_scr.render(screen)
