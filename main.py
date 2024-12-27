@@ -4,33 +4,6 @@ import time
 import pygame
 
 
-class Player:
-    def __init__(self, board):
-        self.running_pl = True
-        self.board = board
-
-        global active_entities
-        active_entities.append(self)
-
-    def render(self, scr):
-        soul = pygame.sprite.Sprite(entity_spr)
-        soul.image = load_image("Start_scr_sprites/King1.png")
-        soul.rect = soul.image.get_rect()
-        soul.rect.x = 275 + 65 * self.board.player_x
-        soul.rect.y = 25 + 65 * self.board.player_y
-
-
-class Wall:
-    def __init__(self, location, x, y):
-        self.hp = 3
-        self.location = location
-        self.x = x
-        self.y = y
-
-    def breaking(self, board):
-        del board[self.y][self.x]
-
-
 class Starting_screen:
     def __init__(self):
         global active_scr
@@ -81,33 +54,26 @@ class Options:
         active_scr = self
 
 
-class PreGameRoom:
+class Game:
     def __init__(self):
         global start_scr_active
         start_scr_active = False
 
-        self.player = Player(self)
-        self.player_x = 0
-        self.player_y = 0
-
         global active_scr
         active_scr = self
+
+        self.player_x = 0
+        self.player_y = 0
 
         self.board = [[0] * 10 for _ in range(10)]
         self.left = 275
         self.top = 25
         self.cell_size = 65
 
-        for _ in pygame.event.get():
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_w]:
-                self.player_y -= 1
-            elif keys[pygame.K_a]:
-                self.player_x -= 1
-            elif keys[pygame.K_s]:
-                self.player_x += 1
-            elif keys[pygame.K_d]:
-                self.player_y += 1
+
+class PreGameRoom(Game):
+    def __init__(self):
+        super().__init__()
 
     def render(self, scr):
         entity_spr.draw(scr)
@@ -118,30 +84,19 @@ class PreGameRoom:
                     pygame.draw.rect(screen, pygame.Color(0, 79, 153), (
                         x * self.cell_size + self.left, y * self.cell_size + self.top,
                         self.cell_size, self.cell_size), 1)
+            player = pygame.sprite.Sprite(entity_spr)
+            player.image = load_image("Start_scr_sprites/King.png")
+            player.rect = player.image.get_rect()
+            player.rect.x = self.player_x * 65 + 275
+            player.rect.y = self.player_y * 65 + 25
         elif pregamewait:
             time.sleep(3)
             pregamewait = False
 
     def enter_game(self):
-        if (self.player.x_pos == 9
-                and self.player.y_pos in [6, 7]):
+        if (self.player_x == 9
+                and self.player_y in [6, 7]):
             Game()
-
-
-class Game:
-    def __init__(self):
-        global start_scr_active
-        start_scr_active = False
-
-        self.player = Player()
-
-        global active_scr
-        active_scr = self
-
-        self.board = [[0] * 10 for _ in range(10)]
-        self.left = 275
-        self.top = 25
-        self.cell_size = 65
 
 
 class Ingame_Settings:
@@ -159,14 +114,16 @@ class button:
         self.xlen = x1
         self.ylen = y1
         self.w = w
-        pygame.draw.rect(scrn, clr, ((x, y), (x1, y1)), w)
+        pygame.draw.rect(scrn, clr, ((x, y), (x1, y1)), w,
+                         3, 3)
         self.mouse_drawn()
 
     def mouse_drawn(self):
         if event.type == pygame.MOUSEMOTION:
             if self.x < event.pos[0] < self.x + self.xlen and self.y < event.pos[1] < self.y + self.ylen:
                 pygame.draw.rect(self.scrn, pygame.Color('yellow'),
-                                 ((self.x, self.y), (self.xlen, self.ylen)), self.w)
+                                 ((self.x, self.y), (self.xlen, self.ylen)), self.w,
+                                 3, 3)
 
     def assign_func(self, f, *args):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -209,13 +166,9 @@ while running:
             Ingame_Settings()
         if key[pygame.K_ESCAPE] and start_scr_active:
             sys.exit()
-        if Player:
-            Player.x_pos = 0
     screen.fill((0, 0, 0))
 
     active_scr.render(screen)
-    for i in active_entities:
-        i.render(screen)
 
     pygame.display.flip()
 pygame.quit()
