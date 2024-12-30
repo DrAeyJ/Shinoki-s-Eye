@@ -10,25 +10,25 @@ class Starting_screen:
         active_scr = self
 
         bkgr = pygame.sprite.Sprite(start_scr_sprites_group)
-        bkgr.image = load_image("Start_scr_sprites/logo.png")
+        bkgr.image = load_image("Sprites/logo.png")
         bkgr.rect = bkgr.image.get_rect()
         bkgr.rect.x = -10
         bkgr.rect.y = 0
 
         play = pygame.sprite.Sprite(start_scr_sprites_group)
-        play.image = load_image("Start_scr_sprites/play_btn_spr.png")
+        play.image = load_image("Sprites/play_btn_spr.png")
         play.rect = bkgr.image.get_rect()
         play.rect.x = 203
         play.rect.y = 253
 
         options = pygame.sprite.Sprite(start_scr_sprites_group)
-        options.image = load_image("Start_scr_sprites/options_btn_spr.png")
+        options.image = load_image("Sprites/options_btn_spr.png")
         options.rect = bkgr.image.get_rect()
         options.rect.x = 203
         options.rect.y = 333
 
         quits = pygame.sprite.Sprite(start_scr_sprites_group)
-        quits.image = load_image("Start_scr_sprites/quit_btn_spr.png")
+        quits.image = load_image("Sprites/quit_btn_spr.png")
         quits.rect = bkgr.image.get_rect()
         quits.rect.x = 203
         quits.rect.y = 413
@@ -62,40 +62,38 @@ class Game:
         global active_scr
         active_scr = self
 
+        global game
+        game = self
+
         self.player_x = 0
         self.player_y = 0
 
-        self.board = [[0] * 10 for _ in range(10)]
+        self.board = [[0] * 12 for _ in range(12)]
         self.left = 275
-        self.top = 25
-        self.cell_size = 65
+        self.top = 50
 
 
 class PreGameRoom(Game):
     def __init__(self):
         super().__init__()
+        self.board = pygame.sprite.Sprite(board_group)
+        self.board.image = load_image("Sprites/Board1_borderless.png")
+        self.board.rect = self.board.image.get_rect()
+        self.board.rect.x = -50 - 100 + 600 - 200
+        self.board.rect.y = -50 - 100 + 350 - 200
 
     def render(self, scr):
-        entity_spr.draw(scr)
-        global pregamewait
-        if not pregamewait:
-            for y in range(10):
-                for x in range(10):
-                    pygame.draw.rect(screen, pygame.Color(0, 79, 153), (
-                        x * self.cell_size + self.left, y * self.cell_size + self.top,
-                        self.cell_size, self.cell_size), 1)
-            player = pygame.sprite.Sprite(entity_spr)
-            player.image = load_image("Start_scr_sprites/King.png")
-            player.rect = player.image.get_rect()
-            player.rect.x = self.player_x * 65 + 275
-            player.rect.y = self.player_y * 65 + 25
-        elif pregamewait:
-            time.sleep(3)
-            pregamewait = False
+        scr.fill((0, 0, 0))
+
+        self.board.rect.x = -50 - 100 + 600 - 200 * self.player_x
+        self.board.rect.y = - 100 + 350 - 200 * self.player_y
+
+        self.enter_game()
+        board_group.draw(scr)
 
     def enter_game(self):
-        if (self.player_x == 9
-                and self.player_y in [6, 7]):
+        if (self.player_x == 11
+                and self.player_y in [5, 6]):
             Game()
 
 
@@ -146,7 +144,7 @@ screen = pygame.display.set_mode(size)
 pygame.display.set_caption("Shinoki`s Eye")
 
 start_scr_sprites_group = pygame.sprite.Group()
-entity_spr = pygame.sprite.Group()
+board_group = pygame.sprite.Group()
 
 start_scr = Starting_screen()
 active_scr = start_scr
@@ -155,6 +153,7 @@ start_scr_active = True
 active_entities = []
 
 pregamewait = False
+game = None
 
 running = True
 while running:
@@ -166,9 +165,28 @@ while running:
             Ingame_Settings()
         if key[pygame.K_ESCAPE] and start_scr_active:
             sys.exit()
+
+        if game:
+            if event.type == pygame.KEYDOWN:
+                if key[pygame.K_w]:
+                    for i in range(20):
+                        time.sleep(0.05)
+                        game.player_y -= 0.05
+                        active_scr.render(screen)
+                elif key[pygame.K_a]:
+                    for i in range(20):
+                        time.sleep(0.05)
+                        game.player_x -= 0.05
+                elif key[pygame.K_d]:
+                    for i in range(20):
+                        time.sleep(0.05)
+                        game.player_x += 0.05
+                elif key[pygame.K_s]:
+                    for i in range(20):
+                        time.sleep(0.05)
+                        game.player_y += 0.05
+
     screen.fill((0, 0, 0))
-
     active_scr.render(screen)
-
     pygame.display.flip()
 pygame.quit()
