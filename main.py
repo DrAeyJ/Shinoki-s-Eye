@@ -77,6 +77,7 @@ class PreGameRoom(Game):
     def __init__(self):
         super().__init__()
         self.board = pygame.sprite.Sprite(board_group)
+        self.player_spr = pygame.sprite.Sprite(board_group)
 
     def render(self, scr):
         scr.fill((0, 0, 0))
@@ -85,6 +86,11 @@ class PreGameRoom(Game):
         self.board.rect = self.board.image.get_rect()
         self.board.rect.x = - 100 + 600 - 200 * self.player_x
         self.board.rect.y = - 100 + 350 - 200 * self.player_y
+
+        self.player_spr.image = load_image("Sprites/King.png")
+        self.player_spr.rect = self.player_spr.image.get_rect()
+        self.player_spr.rect.x = 500
+        self.player_spr.rect.y = 250
 
         self.enter_game()
         board_group.draw(scr)
@@ -136,6 +142,23 @@ def load_image(nm, colorkey=None):
     return image
 
 
+def move(iterations, direction):
+    for _ in range(iterations):
+        time.sleep(0.01 / iterations)
+        match direction:
+            case "w":
+                game.player_y -= 1 / iterations
+            case "a":
+                game.player_x -= 1 / iterations
+            case "s":
+                game.player_x += 1 / iterations
+            case "d":
+                game.player_y += 1 / iterations
+        screen.fill((0, 0, 0))
+        active_scr.render(screen)
+        pygame.display.flip()
+
+
 pygame.init()
 size = 1200, 700
 screen = pygame.display.set_mode(size)
@@ -167,33 +190,13 @@ while running:
         if game:
             if event.type == pygame.KEYDOWN:
                 if key[pygame.K_w]:
-                    for i in range(50):
-                        time.sleep(0.004)
-                        game.player_y -= 0.02
-                        screen.fill((0, 0, 0))
-                        active_scr.render(screen)
-                        pygame.display.flip()
+                    move(25, "w")
                 elif key[pygame.K_a]:
-                    for i in range(50):
-                        time.sleep(0.004)
-                        game.player_x -= 0.02
-                        screen.fill((0, 0, 0))
-                        active_scr.render(screen)
-                        pygame.display.flip()
+                    move(25, "a")
                 elif key[pygame.K_d]:
-                    for i in range(50):
-                        time.sleep(0.004)
-                        game.player_x += 0.02
-                        screen.fill((0, 0, 0))
-                        active_scr.render(screen)
-                        pygame.display.flip()
+                    move(25, "s")
                 elif key[pygame.K_s]:
-                    for i in range(50):
-                        time.sleep(0.004)
-                        game.player_y += 0.02
-                        screen.fill((0, 0, 0))
-                        active_scr.render(screen)
-                        pygame.display.flip()
+                    move(25, "d")
     screen.fill((0, 0, 0))
     active_scr.render(screen)
     pygame.display.flip()
