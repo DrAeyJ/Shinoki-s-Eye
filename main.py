@@ -1,4 +1,5 @@
 import os
+import random
 import sys
 import time
 import pygame
@@ -9,6 +10,8 @@ class Starting_screen:
     def __init__(self):
         global active_scr
         active_scr = self
+
+        self.options_opened = False
 
         bkgr = pygame.sprite.Sprite(start_scr_sprites_group)
         bkgr.image = load_image("Sprites/logo.png")
@@ -35,77 +38,119 @@ class Starting_screen:
         quits.rect.y = 413
 
     def render(self, scrn):
-        start_scr_sprites_group.draw(screen)
+        if not self.options_opened:
+            start_scr_sprites_group.draw(screen)
 
-        start_btn = button(scrn, (0, 79, 153), 200, 250, 300, 50, 3)
-        options_btn = button(scrn, (0, 79, 153), 200, 330, 300, 50, 3)
-        quit_btn = button(scrn, (0, 79, 153), 200, 410, 300, 50, 3)
+            start_btn = button(scrn, (0, 79, 153), 200, 250, 300, 50, 3)
+            options_btn = button(scrn, (0, 79, 153), 200, 330, 300, 50, 3)
+            quit_btn = button(scrn, (0, 79, 153), 200, 410, 300, 50, 3)
 
-        start_btn.assign_func(PreGameRoom)
-        options_btn.assign_func(Options)
-        quit_btn.assign_func(sys.exit)
+            start_btn.assign_func(PreGameRoom)
+            options_btn.assign_func(self.options)
+            quit_btn.assign_func(sys.exit)
+        else:
+            pass
 
-
-class Options:
-    def __init__(self):
-        global start_scr_active
-        start_scr_active = False
-
-        global active_scr
-        active_scr = self
+    def options(self):
+        self.options_opened = True
 
 
 class Game:
     def __init__(self):
-        global start_scr_active
-        start_scr_active = False
-
         global active_scr
         active_scr = self
 
         global game
         game = self
 
+        self.spr_time = 0
+        self.clock = pygame.time.Clock()
+
+        self.options_opened = False
+
         self.player_x = 0
         self.player_y = 0
 
-        self.board = [[0] * 12 for _ in range(12)]
         self.left = 275
         self.top = 50
+
+        self.board = [[0] * 12 for _ in range(12)]
+
+        self.gameplay()
+
+    def gameplay(self):
+        pass
+
+    def generate_room(self, stage):
+        self.board = [[0] * 12 for _ in range(12)]
+        for i in range(len(self.board)):
+            for j in range(len(self.board)):
+                if i != 0 and j != 0:
+                    chance = random.randint(0, 100)
+                    if 0 <= chance < 35:
+                        self.board[i][j] = ("wall", 3 * stage)
+                    elif 35 <= chance < 50:
+                        self.board[i][j] = ("enemy", 25 * stage)
+                    elif 50 <= chance < 55:
+                        self.board[i][j] = ("chest", None)
+
+    def interact(self, cell_x, cell_y, keys):
+        if self.board[cell_x][cell_y] == 0:
+            match keys:
+                case "w":
+                    move(25, "w")
+                case "a":
+                    move(25, "a")
+                case "s":
+                    move(25, "s")
+                case "d":
+                    move(25, "d")
+
+        elif self.board[cell_x][cell_y][0] == "wall":
+            if self.board[cell_x][cell_y][1] == 1:
+                self.board[cell_x][cell_y] = 0
+            else:
+                self.board[cell_x][cell_y][1] -= 1
+
+        elif self.board[cell_x][cell_y][0] == "enemy":
+            pass
+#           future func enemy_movement()
+
+        elif self.board[cell_x][cell_y][0] == "chest":
+            pass
+#           future func open_chest()
 
 
 class PreGameRoom(Game):
     def __init__(self):
         super().__init__()
-        self.board = pygame.sprite.Sprite(board_group)
+        self.board_img = pygame.sprite.Sprite(board_group)
         self.player_spr = pygame.sprite.Sprite(board_group)
+        self.player_spr1 = pygame.sprite.Sprite(board_group)
+
+        global starting_time
+        starting_time = datetime.datetime.now()
 
     def render(self, scr):
         scr.fill((0, 0, 0))
 
-        self.board.image = load_image("Sprites/Board1_borderless.png")
-        self.board.rect = self.board.image.get_rect()
-        self.board.rect.x = - 100 + 600 - 200 * self.player_x
-        self.board.rect.y = - 100 + 350 - 200 * self.player_y
+        self.board_img.image = load_image("Sprites/Board0_borderless.png")
+        self.board_img.rect = self.board_img.image.get_rect()
+        self.board_img.rect.x = 500 - 200 * self.player_x
+        self.board_img.rect.y = 250 - 200 * self.player_y
 
         self.player_spr.image = load_image("Sprites/King.png")
         self.player_spr.rect = self.player_spr.image.get_rect()
         self.player_spr.rect.x = 500
         self.player_spr.rect.y = 250
 
-        self.enter_game()
+        self.gameplay()
         board_group.draw(scr)
 
-    def enter_game(self):
-        if (self.player_x == 11
-                and self.player_y in [5, 6]):
+    def gameplay(self):
+        if (5 <= self.player_x <= 6
+                and 5 <= self.player_y <= 6):
             Game()
-
-
-class Ingame_Settings:
-    def __init__(self):
-        global active_scr
-        active_scr = self
 
 
 class button:
@@ -146,18 +191,21 @@ def load_image(nm, colorkey=None):
 def move(iterations, direction):
     for _ in range(iterations):
         time.sleep(0.01 / iterations)
-        match direction:
-            case "w":
-                game.player_y -= 1 / iterations
-            case "a":
-                game.player_x -= 1 / iterations
-            case "s":
-                game.player_x += 1 / iterations
-            case "d":
-                game.player_y += 1 / iterations
+
+        if direction == "w":
+            game.player_y -= 1 / iterations
+        elif direction == "a":
+            game.player_x -= 1 / iterations
+        elif direction == "s":
+            game.player_y += 1 / iterations
+        elif direction == "d":
+            game.player_x += 1 / iterations
+
         screen.fill((0, 0, 0))
         active_scr.render(screen)
         pygame.display.flip()
+    game.player_x = round(game.player_x)
+    game.player_y = round(game.player_y)
 
 
 pygame.init()
@@ -170,9 +218,10 @@ board_group = pygame.sprite.Group()
 
 start_scr = Starting_screen()
 active_scr = start_scr
-start_scr_active = True
 
-active_entities = []
+starting_time = None
+ending_time = None
+game_duration = None
 
 pregamewait = False
 game = None
@@ -183,21 +232,25 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         key = pygame.key.get_pressed()
-        if key[pygame.K_ESCAPE] and not start_scr_active:
-            Ingame_Settings()
-        if key[pygame.K_ESCAPE] and start_scr_active:
+        if key[pygame.K_ESCAPE] and active_scr == Starting_screen and active_scr.options_opened:
+            active_scr.options_opened = False
+        if key[pygame.K_ESCAPE] and game:
+            game.options_opened = True
+        if key[pygame.K_ESCAPE] and game and game.options_opened:
+            game.options_opened = True
+        if key[pygame.K_ESCAPE] and not game:
             sys.exit()
 
         if game:
             if event.type == pygame.KEYDOWN:
                 if key[pygame.K_w]:
-                    move(25, "w")
+                    game.interact(game.player_x, game.player_y - 1, "w")
                 elif key[pygame.K_a]:
-                    move(25, "a")
-                elif key[pygame.K_d]:
-                    move(25, "s")
+                    game.interact(game.player_x - 1, game.player_y, "a")
                 elif key[pygame.K_s]:
-                    move(25, "d")
+                    game.interact(game.player_x + 1, game.player_y, "s")
+                elif key[pygame.K_d]:
+                    game.interact(game.player_x, game.player_y + 1, "d")
     screen.fill((0, 0, 0))
     active_scr.render(screen)
     pygame.display.flip()
