@@ -98,13 +98,13 @@ class Game:
         if self.board[cell_x][cell_y] == 0:
             match keys:
                 case "w":
-                    move(25, "w")
+                    self.move(25, "w")
                 case "a":
-                    move(25, "a")
+                    self.move(25, "a")
                 case "s":
-                    move(25, "s")
+                    self.move(25, "s")
                 case "d":
-                    move(25, "d")
+                    self.move(25, "d")
 
         elif self.board[cell_x][cell_y][0] == "wall":
             if self.board[cell_x][cell_y][1] == 1:
@@ -120,32 +120,71 @@ class Game:
             pass
 #           future func open_chest()
 
+    def move(self, iterations, direction):
+        for _ in range(iterations):
+            time.sleep(0.01 / iterations)
+
+            if direction == "w":
+                self.player_y -= 1 / iterations
+            elif direction == "a":
+                self.player_x -= 1 / iterations
+            elif direction == "s":
+                self.player_y += 1 / iterations
+            elif direction == "d":
+                self.player_x += 1 / iterations
+
+            screen.fill((0, 0, 0))
+            active_scr.render(screen)
+            pygame.display.flip()
+        self.player_x = round(self.player_x)
+        self.player_y = round(self.player_y)
+
 
 class PreGameRoom(Game):
     def __init__(self):
+        self.spr_frame = False
         super().__init__()
         self.board_img = pygame.sprite.Sprite(board_group)
-        self.player_spr = pygame.sprite.Sprite(board_group)
-        self.player_spr1 = pygame.sprite.Sprite(board_group)
+        self.player_spr = pygame.sprite.Sprite(board_group1)
+        self.player_spr1 = pygame.sprite.Sprite(board_group2)
 
+        self.clock = pygame.time.Clock()
+        self.spr_time = 0
         global starting_time
         starting_time = datetime.datetime.now()
 
     def render(self, scr):
         scr.fill((0, 0, 0))
 
-        self.board_img.image = load_image("Sprites/Board0_borderless.png")
+        self.board_img.image = load_image("Sprites/Board0.png")
         self.board_img.rect = self.board_img.image.get_rect()
         self.board_img.rect.x = 500 - 200 * self.player_x
         self.board_img.rect.y = 250 - 200 * self.player_y
 
-        self.player_spr.image = load_image("Sprites/King.png")
-        self.player_spr.rect = self.player_spr.image.get_rect()
-        self.player_spr.rect.x = 500
-        self.player_spr.rect.y = 250
+        board_group.draw(scr)
+
+        if not self.spr_frame:
+            self.player_spr.image = load_image("Sprites/King.png")
+            self.player_spr.rect = self.player_spr.image.get_rect()
+            self.player_spr.rect.x = 500
+            self.player_spr.rect.y = 250
+            board_group1.draw(scr)
+        elif self.spr_frame:
+            self.player_spr1.image = load_image("Sprites/King1.png")
+            self.player_spr1.rect = self.player_spr1.image.get_rect()
+            self.player_spr1.rect.x = 500
+            self.player_spr1.rect.y = 250
+            board_group2.draw(scr)
+
+        self.spr_time += self.clock.tick() / 1000
+        if self.spr_time >= 0.5 and not self.spr_frame:
+            self.spr_frame = True
+            self.spr_time = 0
+        elif self.spr_time >= 0.5 and self.spr_frame:
+            self.spr_frame = False
+            self.spr_time = 0
 
         self.gameplay()
-        board_group.draw(scr)
 
     def gameplay(self):
         if (5 <= self.player_x <= 6
@@ -188,26 +227,6 @@ def load_image(nm, colorkey=None):
     return image
 
 
-def move(iterations, direction):
-    for _ in range(iterations):
-        time.sleep(0.01 / iterations)
-
-        if direction == "w":
-            game.player_y -= 1 / iterations
-        elif direction == "a":
-            game.player_x -= 1 / iterations
-        elif direction == "s":
-            game.player_y += 1 / iterations
-        elif direction == "d":
-            game.player_x += 1 / iterations
-
-        screen.fill((0, 0, 0))
-        active_scr.render(screen)
-        pygame.display.flip()
-    game.player_x = round(game.player_x)
-    game.player_y = round(game.player_y)
-
-
 pygame.init()
 size = 1200, 700
 screen = pygame.display.set_mode(size)
@@ -215,6 +234,8 @@ pygame.display.set_caption("Shinoki`s Eye")
 
 start_scr_sprites_group = pygame.sprite.Group()
 board_group = pygame.sprite.Group()
+board_group1 = pygame.sprite.Group()
+board_group2 = pygame.sprite.Group()
 
 start_scr = Starting_screen()
 active_scr = start_scr
