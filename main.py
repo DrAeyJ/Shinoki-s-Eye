@@ -1,5 +1,6 @@
 import os
 import random
+import sqlite3
 import sys
 import time
 import pygame
@@ -63,6 +64,13 @@ class Game:
         global game
         game = self
 
+        self.spr_frame = 0
+        self.clock = pygame.time.Clock()
+        self.spr_time = 0
+
+        self.stage = 1
+        self.room = 1
+
         self.spr_time = 0
         self.clock = pygame.time.Clock()
 
@@ -75,46 +83,42 @@ class Game:
         self.top = 50
 
         self.board = [[0] * 12 for _ in range(12)]
+        self.escape_hatch = None
+
+        self.con = sqlite3.connect("data/Shinoki`s Eye.sqlite")
+        self.cur = self.con.cursor()
 
         self.gameplay()
 
-    def gameplay(self):
-        pass
-
     def generate_room(self, stage):
         self.board = [[0] * 12 for _ in range(12)]
-        for i in range(len(self.board)):
-            for j in range(len(self.board)):
-                if i != 0 and j != 0:
+        for k in range(len(self.board[0])):
+            for j in range(len(self.board[0])):
+                if k == 0 and j == 0:
+                    pass
+                else:
                     chance = random.randint(0, 100)
-                    if 0 <= chance < 35:
-                        self.board[i][j] = ("wall", 3 * stage)
-                    elif 35 <= chance < 50:
-                        self.board[i][j] = ("enemy", 25 * stage)
-                    elif 50 <= chance < 55:
-                        self.board[i][j] = ("chest", None)
+                    if 0 <= chance < 15:
+                        self.board[k][j] = ["wall", 3 * stage]
+                    elif 15 <= chance < 25:
+                        enemy = str(random.choice(self.cur.execute(f"""select name 
+                        from enemies 
+                        where stage = {stage}""").fetchall()))[2:-3]
+                        self.board[k][j] = ["enemy", enemy]
+                    elif 25 <= chance < 30:
+                        self.board[k][j] = ["chest",]
+        self.generate_escape_hatch()
 
     def interact(self, cell_x, cell_y, keys):
         if self.board[cell_x][cell_y] == 0:
-            match keys:
-                case "w":
-                    self.move(25, "w")
-                case "a":
-                    self.move(25, "a")
-                case "s":
-                    self.move(25, "s")
-                case "d":
-                    self.move(25, "d")
+            self.move(25, keys)
 
         elif self.board[cell_x][cell_y][0] == "wall":
-            if self.board[cell_x][cell_y][1] == 1:
-                self.board[cell_x][cell_y] = 0
-            else:
-                self.board[cell_x][cell_y][1] -= 1
+            pass
 
         elif self.board[cell_x][cell_y][0] == "enemy":
             pass
-#           future func enemy_movement()
+#       future func enemy_movement()
 
         elif self.board[cell_x][cell_y][0] == "chest":
             pass
@@ -138,50 +142,91 @@ class Game:
             pygame.display.flip()
         self.player_x = round(self.player_x)
         self.player_y = round(self.player_y)
+        if self.board[self.player_x][self.player_y] == "escape_hatch":
+            ShopRoom()
+
+    def render(self, scr):
+        scr.fill((0, 0, 0))
+        global board_img
+        global player_spr
+        global entities
+        global wall_img
+
+        board_img.image = load_image(f"Sprites/Board{self.stage}.png")
+        board_img.rect = board_img.image.get_rect()
+        board_img.rect.x = 500 - 200 * self.player_x
+        board_img.rect.y = 250 - 200 * self.player_y
+        board_group.draw(scr)
+
+        player_spr.image = load_image(f"Sprites/King{self.spr_frame}.png")
+        player_spr.rect = player_spr.image.get_rect()
+        player_spr.rect.x = 500
+        player_spr.rect.y = 250
+        player.draw(scr)
+
+        for i in range(len(self.board[0])):
+            for j in range(len(self.board[0])):
+                if self.board[i][j] != 0 and self.board[i][j][0] == "wall":
+                    wall_img.image = load_image("Sprites/Wall1.png")
+                    wall_img.rect = wall_img.image.get_rect()
+                    wall_img.rect.x = 500 + 200 * i - 200 * self.player_x
+                    wall_img.rect.y = 250 + 200 * j - 200 * self.player_y
+                    wall_gr.draw(scr)
+
+        self.spr_time += self.clock.tick() / 1000
+        if self.spr_time >= 0.5 and not self.spr_frame:
+            self.spr_frame = 1
+            self.spr_time = 0
+        elif self.spr_time >= 0.5 and self.spr_frame:
+            self.spr_frame = 0
+            self.spr_time = 0
+
+    def gameplay(self):
+        self.generate_room(1)
+
+    def generate_escape_hatch(self):
+        self.escape_hatch = [random.randint(0, 11), random.randint(0, 11)]
+        if self.escape_hatch[0] <= 3 and self.escape_hatch[1] <= 3:
+            self.generate_escape_hatch()
+        else:
+            self.board[self.escape_hatch[0]][self.escape_hatch[1]] = "escape_hatch"
+
+
+class ShopRoom:
+    pass
 
 
 class PreGameRoom(Game):
     def __init__(self):
-        self.spr_frame = False
         super().__init__()
-        self.board_img = pygame.sprite.Sprite(board_group)
-        self.player_spr = pygame.sprite.Sprite(board_group1)
-        self.player_spr1 = pygame.sprite.Sprite(board_group2)
-
         self.clock = pygame.time.Clock()
-        self.spr_time = 0
         global starting_time
         starting_time = datetime.datetime.now()
 
     def render(self, scr):
         scr.fill((0, 0, 0))
 
-        self.board_img.image = load_image("Sprites/Board0.png")
-        self.board_img.rect = self.board_img.image.get_rect()
-        self.board_img.rect.x = 500 - 200 * self.player_x
-        self.board_img.rect.y = 250 - 200 * self.player_y
+        global board_img
+        global player_spr
 
+        board_img.image = load_image("Sprites/Board0.png")
+        board_img.rect = board_img.image.get_rect()
+        board_img.rect.x = 500 - 200 * self.player_x
+        board_img.rect.y = 250 - 200 * self.player_y
         board_group.draw(scr)
 
-        if not self.spr_frame:
-            self.player_spr.image = load_image("Sprites/King.png")
-            self.player_spr.rect = self.player_spr.image.get_rect()
-            self.player_spr.rect.x = 500
-            self.player_spr.rect.y = 250
-            board_group1.draw(scr)
-        elif self.spr_frame:
-            self.player_spr1.image = load_image("Sprites/King1.png")
-            self.player_spr1.rect = self.player_spr1.image.get_rect()
-            self.player_spr1.rect.x = 500
-            self.player_spr1.rect.y = 250
-            board_group2.draw(scr)
+        player_spr.image = load_image(f"Sprites/King{self.spr_frame}.png")
+        player_spr.rect = player_spr.image.get_rect()
+        player_spr.rect.x = 500
+        player_spr.rect.y = 250
+        player.draw(scr)
 
         self.spr_time += self.clock.tick() / 1000
         if self.spr_time >= 0.5 and not self.spr_frame:
-            self.spr_frame = True
+            self.spr_frame = 1
             self.spr_time = 0
         elif self.spr_time >= 0.5 and self.spr_frame:
-            self.spr_frame = False
+            self.spr_frame = 0
             self.spr_time = 0
 
         self.gameplay()
@@ -189,6 +234,7 @@ class PreGameRoom(Game):
     def gameplay(self):
         if (5 <= self.player_x <= 6
                 and 5 <= self.player_y <= 6):
+            screen.fill((0, 0, 0))
             Game()
 
 
@@ -234,8 +280,13 @@ pygame.display.set_caption("Shinoki`s Eye")
 
 start_scr_sprites_group = pygame.sprite.Group()
 board_group = pygame.sprite.Group()
-board_group1 = pygame.sprite.Group()
-board_group2 = pygame.sprite.Group()
+player = pygame.sprite.Group()
+entity_gr = pygame.sprite.Group()
+wall_gr = pygame.sprite.Group()
+board_img = pygame.sprite.Sprite(board_group)
+wall_img = pygame.sprite.Sprite(wall_gr)
+player_spr = pygame.sprite.Sprite(player)
+entities = pygame.sprite.Sprite(entity_gr)
 
 start_scr = Starting_screen()
 active_scr = start_scr
@@ -265,13 +316,17 @@ while running:
         if game:
             if event.type == pygame.KEYDOWN:
                 if key[pygame.K_w]:
-                    game.interact(game.player_x, game.player_y - 1, "w")
+                    if game.player_y in range(0, 11):
+                        game.interact(game.player_x, game.player_y - 1, "w")
                 elif key[pygame.K_a]:
-                    game.interact(game.player_x - 1, game.player_y, "a")
+                    if game.player_x - 1 in range(0, 11):
+                        game.interact(game.player_x - 1, game.player_y, "a")
                 elif key[pygame.K_s]:
-                    game.interact(game.player_x + 1, game.player_y, "s")
+                    if game.player_y + 1 in range(0, 11):
+                        game.interact(game.player_x, game.player_y - 1, "s")
                 elif key[pygame.K_d]:
-                    game.interact(game.player_x, game.player_y + 1, "d")
+                    if game.player_x + 1 in range(0, 11):
+                        game.interact(game.player_x + 1, game.player_y, "d")
     screen.fill((0, 0, 0))
     active_scr.render(screen)
     pygame.display.flip()
