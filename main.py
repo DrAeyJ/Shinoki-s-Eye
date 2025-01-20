@@ -88,6 +88,13 @@ class Game:
         self.board = [[0] * 8 for _ in range(8)]
         self.escape_hatch = None
 
+        self.maxhp = 12
+        self.hp = 12
+        self.equipped_weapon = ""
+        self.dmg = 3
+
+        self.item_sold = False
+
         self.con = sqlite3.connect("data/Shinoki`s Eye.sqlite")
         self.cur = self.con.cursor()
 
@@ -147,7 +154,7 @@ class Game:
         self.player_x = round(self.player_x)
         self.player_y = round(self.player_y)
         if self.board[self.player_x][self.player_y] == "escape_hatch":
-            ShopRoom(self.room)
+            ShopRoom()
 
     def render(self, scr):
         scr.fill((0, 0, 0))
@@ -156,51 +163,77 @@ class Game:
         global entities
         global wall_img
         global esha_img
+        global loading
 
-        board_img.image = load_image(f"Sprites/Board{self.stage}8x8.png")
-        board_img.rect = board_img.image.get_rect()
-        board_img.rect.x = 500 - 200 * self.player_x
-        board_img.rect.y = 250 - 200 * self.player_y
+        if loading:
+            if 0 <= self.spr_time / 1000 <= 3:
+                player_spr.image = load_image(f"Sprites/Kinglying.png")
+                player_spr.rect = player_spr.image.get_rect()
+                player_spr.rect.x = 500
+                player_spr.rect.y = 250
+                player.draw(scr)
+            elif 3 < self.spr_time / 1000 <= 5:
+                player_spr.image = load_image(f"Sprites/King0.png")
+                player_spr.rect = player_spr.image.get_rect()
+                player_spr.rect.x = 500
+                player_spr.rect.y = 250
+                player.draw(scr)
+            else:
+                loading = False
+            self.spr_time += self.clock.tick()
 
-        board_group.draw(scr)
+        else:
+            board_img.image = load_image(f"Sprites/Board{self.stage}8x8.png")
+            board_img.rect = board_img.image.get_rect()
+            board_img.rect.x = 500 - 200 * self.player_x
+            board_img.rect.y = 250 - 200 * self.player_y
 
-        esha_img.image = load_image(f"Sprites/escape_hatch{self.spr_frame}.png")
-        esha_img.rect = esha_img.image.get_rect()
-        esha_img.rect.x = 500 + 200 * self.escape_hatch[0] - 200 * self.player_x
-        esha_img.rect.y = 250 + 200 * self.escape_hatch[1] - 200 * self.player_y
+            board_group.draw(scr)
 
-        esha_gr.draw(scr)
+            esha_img.image = load_image(f"Sprites/escape_hatch{self.spr_frame}.png")
+            esha_img.rect = esha_img.image.get_rect()
+            esha_img.rect.x = 500 + 200 * self.escape_hatch[0] - 200 * self.player_x
+            esha_img.rect.y = 250 + 200 * self.escape_hatch[1] - 200 * self.player_y
 
-        player_spr.image = load_image(f"Sprites/King{self.spr_frame}.png")
-        player_spr.rect = player_spr.image.get_rect()
-        player_spr.rect.x = 500
-        player_spr.rect.y = 250
+            esha_gr.draw(scr)
 
-        player.draw(scr)
+            player_spr.image = load_image(f"Sprites/King{self.spr_frame}.png")
+            player_spr.rect = player_spr.image.get_rect()
+            player_spr.rect.x = 500
+            player_spr.rect.y = 250
 
-        for i in range(len(self.board[0])):
-            for j in range(len(self.board[0])):
-                if self.board[i][j] != 0 and self.board[i][j][0] == "wall":
-                    wall_img.image = load_image("Sprites/Wall1.png")
-                    wall_img.rect = wall_img.image.get_rect()
-                    wall_img.rect.x = 500 + 200 * i - 200 * self.player_x
-                    wall_img.rect.y = 250 + 200 * j - 200 * self.player_y
-                    wall_gr.draw(scr)
-                if self.board[i][j] != 0 and self.board[i][j][0] == "enemy" and (self.board[i][j][1] == "Skeleton" or
-                                                                                 self.board[i][j][1] == "Looker"):
-                    entities.image = load_image(f"Sprites/{self.board[i][j][1]}{self.spr_frame}.png")
-                    entities.rect = entities.image.get_rect()
-                    entities.rect.x = 500 + 200 * i - 200 * self.player_x
-                    entities.rect.y = 250 + 200 * j - 200 * self.player_y
-                    entity_gr.draw(scr)
+            player.draw(scr)
 
-        self.spr_time += self.clock.tick() / 1000
-        if self.spr_time >= 0.5 and not self.spr_frame:
-            self.spr_frame = 1
-            self.spr_time = 0
-        elif self.spr_time >= 0.5 and self.spr_frame:
-            self.spr_frame = 0
-            self.spr_time = 0
+            for i in range(len(self.board[0])):
+                for j in range(len(self.board[0])):
+                    if self.board[i][j] != 0 and self.board[i][j][0] == "wall":
+                        wall_img.image = load_image("Sprites/Wall1.png")
+                        wall_img.rect = wall_img.image.get_rect()
+                        wall_img.rect.x = 500 + 200 * i - 200 * self.player_x
+                        wall_img.rect.y = 250 + 200 * j - 200 * self.player_y
+                        wall_gr.draw(scr)
+                    if self.board[i][j] != 0 and self.board[i][j][0] == "enemy" and (self.board[i][j][1] == "Skeleton" or
+                                                                                     self.board[i][j][1] == "Looker"):
+                        entities.image = load_image(f"Sprites/{self.board[i][j][1]}{self.spr_frame}.png")
+                        entities.rect = entities.image.get_rect()
+                        entities.rect.x = 500 + 200 * i - 200 * self.player_x
+                        entities.rect.y = 250 + 200 * j - 200 * self.player_y
+                        entity_gr.draw(scr)
+
+            self.spr_time += self.clock.tick() / 1000
+            if self.spr_time >= 0.5 and not self.spr_frame:
+                self.spr_frame = 1
+                self.spr_time = 0
+            elif self.spr_time >= 0.5 and self.spr_frame:
+                self.spr_frame = 0
+                self.spr_time = 0
+
+            health_img.image = load_image(f"Sprites/HealthBar1.png")
+            health_img.rect = health_img.image.get_rect()
+            health_img.rect.x = 450
+            health_img.rect.y = 600
+
+            health_gr.draw(scr)
 
     def gameplay(self):
         self.generate_room(1)
@@ -214,10 +247,25 @@ class Game:
         else:
             self.board[self.escape_hatch[0]][self.escape_hatch[1]] = "escape_hatch"
 
+    def switch_room(self):
+        global game
+        global active_scr
+        global loading
+
+        loading = True
+
+        self.room += 1
+        self.player_x, self.player_y = 0, 0
+        self.generate_room(1)
+        self.spr_time = 0
+        self.clock.tick()
+
+        game = self
+        active_scr = self
+
 
 class ShopRoom:
-    def __init__(self, room):
-        self.room = room
+    def __init__(self):
         self.player_x = 2
         self.player_y = 3
         self.spr_time = 0
@@ -236,6 +284,13 @@ class ShopRoom:
         global game
         game = self
 
+        self.item1 = []
+        self.item2 = []
+        self.choice = False
+
+        self.con = sqlite3.connect("data/Shinoki`s Eye.sqlite")
+        self.cur = self.con.cursor()
+
         self.item_sold = False
 
     def render(self, scr):
@@ -243,65 +298,114 @@ class ShopRoom:
         global player_spr
         global entities
         global esha_img
+        global item_img
 
-        board_img.image = load_image(f"Sprites/ShopRoom.png")
-        board_img.rect = board_img.image.get_rect()
-        board_img.rect.x = 500 - 200 * self.player_x
-        board_img.rect.y = 250 - 200 * self.player_y
+        if [self.player_x, self.player_y] == self.escape_hatch:
+            global ultra_game
 
-        board_group.draw(scr)
+            ultra_game.switch_room()
 
-        if self.item_sold:
-            esha_img.image = load_image(f"Sprites/escape_hatch{self.spr_frame}.png")
-            esha_img.rect = esha_img.image.get_rect()
-            esha_img.rect.x = 500 + 200 * self.escape_hatch[0] - 200 * self.player_x
-            esha_img.rect.y = 250 + 200 * self.escape_hatch[1] - 200 * self.player_y
+        if self.choice:
+            item1 = button(scr, (0, 79, 153), 100, 150, 400, 400, 3)
+            item2 = button(scr, (0, 79, 153), 700, 150, 400, 400, 3)
+            item1.assign_func(take_item, *self.item1)
+            item2.assign_func(take_item, *self.item2)
+
+            item_img.image = load_image(f"Sprites/{self.item1[0]}.png")
+            item_img.rect = item_img.image.get_rect()
+            item_img.rect.x = 100
+            item_img.rect.y = 150
+
+            item_gr.draw(scr)
+
+            item_img.image = load_image(f"Sprites/{self.item2[0]}.png")
+            item_img.rect = item_img.image.get_rect()
+            item_img.rect.x = 700
+            item_img.rect.y = 150
+
+            item_gr.draw(scr)
         else:
-            esha_img.image = load_image(f"Sprites/escape_hatch0.png")
-            esha_img.rect = esha_img.image.get_rect()
-            esha_img.rect.x = 500 + 200 * self.escape_hatch[0] - 200 * self.player_x
-            esha_img.rect.y = 250 + 200 * self.escape_hatch[1] - 200 * self.player_y
+            board_img.image = load_image(f"Sprites/ShopRoom.png")
+            board_img.rect = board_img.image.get_rect()
+            board_img.rect.x = 500 - 200 * self.player_x
+            board_img.rect.y = 250 - 200 * self.player_y
 
-        esha_gr.draw(scr)
+            board_group.draw(scr)
 
-        player_spr.image = load_image(f"Sprites/King{self.spr_frame}.png")
-        player_spr.rect = player_spr.image.get_rect()
-        player_spr.rect.x = 500
-        player_spr.rect.y = 250
+            if self.item_sold:
+                esha_img.image = load_image(f"Sprites/escape_hatch{self.spr_frame}.png")
+                esha_img.rect = esha_img.image.get_rect()
+                esha_img.rect.x = 500 + 200 * self.escape_hatch[0] - 200 * self.player_x
+                esha_img.rect.y = 250 + 200 * self.escape_hatch[1] - 200 * self.player_y
+            else:
+                esha_img.image = load_image(f"Sprites/escape_hatch0.png")
+                esha_img.rect = esha_img.image.get_rect()
+                esha_img.rect.x = 500 + 200 * self.escape_hatch[0] - 200 * self.player_x
+                esha_img.rect.y = 250 + 200 * self.escape_hatch[1] - 200 * self.player_y
 
-        player.draw(scr)
+            esha_gr.draw(scr)
 
-        for i in range(len(self.board[0])):
-            for j in range(len(self.board[0])):
-                if self.board[i][j] != 0 and self.board[i][j][0] == "trader":
-                    entities.image = load_image(f"Sprites/{self.board[i][j][1]}{self.spr_frame}.png")
-                    entities.rect = entities.image.get_rect()
-                    entities.rect.x = 500 + 200 * i - 200 * self.player_x
-                    entities.rect.y = 250 + 200 * j - 200 * self.player_y
-                    entity_gr.draw(scr)
+            player_spr.image = load_image(f"Sprites/King{self.spr_frame}.png")
+            player_spr.rect = player_spr.image.get_rect()
+            player_spr.rect.x = 500
+            player_spr.rect.y = 250
 
-        self.spr_time += self.clock.tick() / 1000
-        if self.spr_time >= 0.5 and not self.spr_frame:
-            self.spr_frame = 1
-            self.spr_time = 0
-        elif self.spr_time >= 0.5 and self.spr_frame:
-            self.spr_frame = 0
-            self.spr_time = 0
+            player.draw(scr)
+
+            for i in range(len(self.board[0])):
+                for j in range(len(self.board[0])):
+                    if self.board[i][j] != 0 and self.board[i][j][0] == "trader":
+                        entities.image = load_image(f"Sprites/{self.board[i][j][1]}{self.spr_frame}.png")
+                        entities.rect = entities.image.get_rect()
+                        entities.rect.x = 500 + 200 * i - 200 * self.player_x
+                        entities.rect.y = 250 + 200 * j - 200 * self.player_y
+                        entity_gr.draw(scr)
+
+            self.spr_time += self.clock.tick() / 1000
+            if self.spr_time >= 0.5 and not self.spr_frame:
+                self.spr_frame = 1
+                self.spr_time = 0
+            elif self.spr_time >= 0.5 and self.spr_frame:
+                self.spr_frame = 0
+                self.spr_time = 0
+
+            health_img.image = load_image(f"Sprites/HealthBar1.png")
+            health_img.rect = health_img.image.get_rect()
+            health_img.rect.x = 450
+            health_img.rect.y = 600
+
+            health_gr.draw(scr)
 
     def interact(self, cell_x, cell_y, keys):
         if (self.board[cell_x][cell_y] == 0 or
                 self.board[cell_x][cell_y] == "escape_hatch"):
             self.move(25, keys)
-        elif self.board[cell_x][cell_y][0] == "wall":
-            pass
-
-        elif self.board[cell_x][cell_y][0] == "enemy":
-            pass
-    #       future func enemy_movement()
-
-        elif self.board[cell_x][cell_y][0] == "chest":
-            pass
-    #           future func open_chest()
+        elif self.board[cell_x][cell_y][0] == "trader" and not self.item_sold:
+            chance = random.randint(0, 100)
+            if 0 < chance < 30:
+                self.item1 = str(random.choice(self.cur.execute(f"""select name, type, healsordamages 
+                from items 
+                where dropstage = 1
+                and type like 'Damages'
+                and weapontype like '{self.board[cell_x][cell_y][1]}'""").fetchall()))[2:-2].split("', '")
+            else:
+                self.item1 = str(random.choice(self.cur.execute(f"""select name, type, healsordamages 
+                from items 
+                where dropstage = 1
+                and type like 'Heals'""").fetchall()))[2:-2].split("', '")
+            chance = random.randint(0, 100)
+            if 0 < chance < 30:
+                self.item2 = str(random.choice(self.cur.execute(f"""select name, type, healsordamages 
+                            from items 
+                            where dropstage = 1
+                            and type like 'Damages'
+                            and weapontype like '{self.board[cell_x][cell_y][1]}'""").fetchall()))[2:-2].split("', '")
+            else:
+                self.item2 = str(random.choice(self.cur.execute(f"""select name, type, healsordamages 
+                            from items 
+                            where dropstage = 1
+                            and type like 'Heals'""").fetchall()))[2:-2].split("', '")
+            self.choice = True
 
     def move(self, iterations, direction):
         for _ in range(iterations):
@@ -332,31 +436,61 @@ class PreGameRoom(Game):
 
     def render(self, scr):
         scr.fill((0, 0, 0))
-
         global board_img
         global player_spr
+        global loading
 
-        board_img.image = load_image("Sprites/Board08x8.png")
-        board_img.rect = board_img.image.get_rect()
-        board_img.rect.x = 500 - 200 * self.player_x
-        board_img.rect.y = 250 - 200 * self.player_y
-        board_group.draw(scr)
+        if loading:
+            if 0 <= self.spr_time / 1000 <= 3:
+                player_spr.image = load_image(f"Sprites/Kinglying.png")
+                player_spr.rect = player_spr.image.get_rect()
+                player_spr.rect.x = 500
+                player_spr.rect.y = 250
+                player.draw(scr)
+            elif 3 < self.spr_time / 1000 <= 4:
+                player_spr.image = load_image(f"Sprites/King0.png")
+                player_spr.rect = player_spr.image.get_rect()
+                player_spr.rect.x = 500
+                player_spr.rect.y = 250
+                player.draw(scr)
+            elif 4 < self.spr_time / 1000 <= 4.5:
+                player_spr.image = load_image(f"Sprites/Kingblink.png")
+                player_spr.rect = player_spr.image.get_rect()
+                player_spr.rect.x = 500
+                player_spr.rect.y = 250
+                player.draw(scr)
+            elif 4.5 < self.spr_time / 1000 <= 6:
+                player_spr.image = load_image(f"Sprites/King0.png")
+                player_spr.rect = player_spr.image.get_rect()
+                player_spr.rect.x = 500
+                player_spr.rect.y = 250
+                player.draw(scr)
+            else:
+                loading = False
+            self.spr_time += self.clock.tick()
 
-        player_spr.image = load_image(f"Sprites/King{self.spr_frame}.png")
-        player_spr.rect = player_spr.image.get_rect()
-        player_spr.rect.x = 500
-        player_spr.rect.y = 250
-        player.draw(scr)
+        else:
+            board_img.image = load_image("Sprites/Board08x8.png")
+            board_img.rect = board_img.image.get_rect()
+            board_img.rect.x = 500 - 200 * self.player_x
+            board_img.rect.y = 250 - 200 * self.player_y
+            board_group.draw(scr)
 
-        self.spr_time += self.clock.tick() / 1000
-        if self.spr_time >= 0.5 and not self.spr_frame:
-            self.spr_frame = 1
-            self.spr_time = 0
-        elif self.spr_time >= 0.5 and self.spr_frame:
-            self.spr_frame = 0
-            self.spr_time = 0
+            player_spr.image = load_image(f"Sprites/King{self.spr_frame}.png")
+            player_spr.rect = player_spr.image.get_rect()
+            player_spr.rect.x = 500
+            player_spr.rect.y = 250
+            player.draw(scr)
 
-        self.gameplay()
+            self.spr_time += self.clock.tick() / 1000
+            if self.spr_time >= 0.5 and not self.spr_frame:
+                self.spr_frame = 1
+                self.spr_time = 0
+            elif self.spr_time >= 0.5 and self.spr_frame:
+                self.spr_frame = 0
+                self.spr_time = 0
+
+            self.gameplay()
 
     def gameplay(self):
         if (3 <= self.player_x <= 4
@@ -400,6 +534,32 @@ def load_image(nm, colorkey=None):
     return image
 
 
+def take_item(name, typ, amount):
+    global ultra_game
+    global game
+    if typ == "Damages":
+        if "-" in amount:
+            am = [int(i) for i in amount.split(" - ")]
+            ultra_game.maxhp = 12 - am[1]
+            ultra_game.dmg = am[0]
+            ultra_game.equipped_weapon = name
+        elif "+" in amount:
+            am = [int(i) for i in amount.split(" + ")]
+            ultra_game.maxhp = 12 + am[1]
+            ultra_game.dmg = am[0]
+            ultra_game.equipped_weapon = name
+        else:
+            ultra_game.dmg = amount
+            ultra_game.equipped_weapon = name
+    elif typ == "Heals":
+        ultra_game.hp += int(amount)
+        if ultra_game.hp > ultra_game.maxhp:
+            ultra_game.hp = ultra_game.maxhp
+
+    game.item_sold = True
+    game.choice = False
+
+
 pygame.init()
 size = 1200, 700
 screen = pygame.display.set_mode(size)
@@ -411,12 +571,16 @@ player = pygame.sprite.Group()
 entity_gr = pygame.sprite.Group()
 wall_gr = pygame.sprite.Group()
 esha_gr = pygame.sprite.Group()
+item_gr = pygame.sprite.Group()
+health_gr = pygame.sprite.Group()
 
 board_img = pygame.sprite.Sprite(board_group)
 esha_img = pygame.sprite.Sprite(esha_gr)
 wall_img = pygame.sprite.Sprite(wall_gr)
 player_spr = pygame.sprite.Sprite(player)
 entities = pygame.sprite.Sprite(entity_gr)
+item_img = pygame.sprite.Sprite(item_gr)
+health_img = pygame.sprite.Sprite(health_gr)
 
 start_scr = Starting_screen()
 active_scr = start_scr
@@ -429,7 +593,7 @@ pregamewait = False
 game = None
 ultra_game = None
 
-loading = False
+loading = True
 
 running = True
 while running:
@@ -437,17 +601,15 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         key = pygame.key.get_pressed()
-        if key[pygame.K_ESCAPE] and active_scr == Starting_screen and active_scr.options_opened:
-            active_scr.options_opened = False
-        if key[pygame.K_ESCAPE] and game:
-            game.options_opened = True
-        if key[pygame.K_ESCAPE] and game and game.options_opened:
-            game.options_opened = True
-        if key[pygame.K_ESCAPE] and not game:
-            sys.exit()
+        if event.type == pygame.KEYDOWN:
+            if key[pygame.K_ESCAPE] and active_scr == Starting_screen and active_scr.options_opened:
+                active_scr.options_opened = False
+            if key[pygame.K_ESCAPE] and game and not game.options_opened:
+                game.options_opened = True
+            elif key[pygame.K_ESCAPE] and game and game.options_opened:
+                game.options_opened = False
 
-        if game:
-            if event.type == pygame.KEYDOWN:
+            if game:
                 if key[pygame.K_w]:
                     if game.player_y - 1 in range(0, 11):
                         game.interact(game.player_x, game.player_y - 1, "w")
