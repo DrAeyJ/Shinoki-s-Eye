@@ -98,6 +98,9 @@ class Game:
         self.con = sqlite3.connect("data/Shinoki`s Eye.sqlite")
         self.cur = self.con.cursor()
 
+        self.choice = False
+        self.item = []
+
         self.gameplay()
 
     def generate_room(self, stage):
@@ -112,11 +115,11 @@ class Game:
                         self.board[k][j] = ["wall", 3 * stage]
                     elif 15 <= chance < 25:
                         if k > 1 and j > 1:
-                            enemy = str(random.choice(self.cur.execute(f"""select name 
+                            enemy = list(random.choice(self.cur.execute(f"""select name, hp, atk, type 
                             from enemies 
-                            where stage = {stage}""").fetchall()))[2:-3]
-                            self.board[k][j] = ["enemy", enemy]
-                    elif 25 <= chance < 30:
+                            where stage = {stage}""").fetchall()))
+                            self.board[k][j] = ["enemy", enemy[0], enemy[1], int(enemy[2]), enemy[3]]
+                    elif 25 <= chance < 28:
                         self.board[k][j] = ["chest",]
         self.generate_escape_hatch()
 
@@ -127,34 +130,32 @@ class Game:
         elif self.board[cell_x][cell_y][0] == "wall":
             pass
 
-        elif self.board[cell_x][cell_y][0] == "enemy":
-            pass
-    #       future func enemy_movement()
-
         elif self.board[cell_x][cell_y][0] == "chest":
-            pass
-    #           future func open_chest()
+            self.open_chest()
+            self.board[cell_x][cell_y] = 0
 
     def move(self, iterations, direction):
-        for _ in range(iterations):
-            time.sleep(0.4 / iterations)
+        if not self.choice:
+            for _ in range(iterations):
+                time.sleep(0.4 / iterations)
 
-            if direction == "w":
-                self.player_y -= 1 / iterations
-            elif direction == "a":
-                self.player_x -= 1 / iterations
-            elif direction == "s":
-                self.player_y += 1 / iterations
-            elif direction == "d":
-                self.player_x += 1 / iterations
+                if direction == "w":
+                    self.player_y -= 1 / iterations
+                elif direction == "a":
+                    self.player_x -= 1 / iterations
+                elif direction == "s":
+                    self.player_y += 1 / iterations
+                elif direction == "d":
+                    self.player_x += 1 / iterations
 
-            screen.fill((0, 0, 0))
-            active_scr.render(screen)
-            pygame.display.flip()
-        self.player_x = round(self.player_x)
-        self.player_y = round(self.player_y)
-        if self.board[self.player_x][self.player_y] == "escape_hatch":
-            ShopRoom()
+                screen.fill((0, 0, 0))
+                active_scr.render(screen)
+                pygame.display.flip()
+            self.player_x = round(self.player_x)
+            self.player_y = round(self.player_y)
+            if self.board[self.player_x][self.player_y] == "escape_hatch":
+                ShopRoom()
+            self.attack()
 
     def render(self, scr):
         scr.fill((0, 0, 0))
@@ -162,17 +163,19 @@ class Game:
         global player_spr
         global entities
         global wall_img
+        global chest_img
         global esha_img
         global loading
+        global font
 
         if loading:
-            if 0 <= self.spr_time / 1000 <= 3:
+            if 0 <= self.spr_time / 1000 <= 1.5:
                 player_spr.image = load_image(f"Sprites/Kinglying.png")
                 player_spr.rect = player_spr.image.get_rect()
                 player_spr.rect.x = 500
                 player_spr.rect.y = 250
                 player.draw(scr)
-            elif 3 < self.spr_time / 1000 <= 5:
+            elif 1.5 < self.spr_time / 1000 <= 3:
                 player_spr.image = load_image(f"Sprites/King0.png")
                 player_spr.rect = player_spr.image.get_rect()
                 player_spr.rect.x = 500
@@ -181,6 +184,21 @@ class Game:
             else:
                 loading = False
             self.spr_time += self.clock.tick()
+
+        elif self.choice:
+            item = button(scr, (0, 79, 153), 400, 50, 400, 400, 3)
+            take = button(scr, (0, 79, 153), 150, 525, 400, 100, 3)
+            loose = button(scr, (0, 79, 153), 650, 525, 400, 100, 3)
+
+            take.assign_func(take_item, *self.item)
+            loose.assign_func(loose_item)
+
+            item_img.image = load_image(f"Sprites/{self.item[0]}.png")
+            item_img.rect = item_img.image.get_rect()
+            item_img.rect.x = 400
+            item_img.rect.y = 50
+
+            item_gr.draw(scr)
 
         else:
             board_img.image = load_image(f"Sprites/Board{self.stage}8x8.png")
@@ -212,13 +230,19 @@ class Game:
                         wall_img.rect.x = 500 + 200 * i - 200 * self.player_x
                         wall_img.rect.y = 250 + 200 * j - 200 * self.player_y
                         wall_gr.draw(scr)
-                    if self.board[i][j] != 0 and self.board[i][j][0] == "enemy" and (self.board[i][j][1] == "Skeleton" or
-                                                                                     self.board[i][j][1] == "Looker"):
-                        entities.image = load_image(f"Sprites/{self.board[i][j][1]}{self.spr_frame}.png")
-                        entities.rect = entities.image.get_rect()
-                        entities.rect.x = 500 + 200 * i - 200 * self.player_x
-                        entities.rect.y = 250 + 200 * j - 200 * self.player_y
-                        entity_gr.draw(scr)
+                    if self.board[i][j] != 0 and self.board[i][j][0] == "chest":
+                        chest_img.image = load_image("Sprites/Chest.png")
+                        chest_img.rect = chest_img.image.get_rect()
+                        chest_img.rect.x = 500 + 200 * i - 200 * self.player_x
+                        chest_img.rect.y = 250 + 200 * j - 200 * self.player_y
+                        chest_gr.draw(scr)
+                    if self.board[i][j] != 0 and self.board[i][j][0] == "enemy":
+                        if self.board[i][j][1] != "Mole" and self.board[i][j][1] != "WanderingCat":
+                            entities.image = load_image(f"Sprites/{self.board[i][j][1]}{self.spr_frame}.png")
+                            entities.rect = entities.image.get_rect()
+                            entities.rect.x = 500 + 200 * i - 200 * self.player_x
+                            entities.rect.y = 250 + 200 * j - 200 * self.player_y
+                            entity_gr.draw(scr)
 
             self.spr_time += self.clock.tick() / 1000
             if self.spr_time >= 0.5 and not self.spr_frame:
@@ -228,12 +252,38 @@ class Game:
                 self.spr_frame = 0
                 self.spr_time = 0
 
-            health_img.image = load_image(f"Sprites/HealthBar1.png")
-            health_img.rect = health_img.image.get_rect()
-            health_img.rect.x = 450
-            health_img.rect.y = 600
+            if 0.2 <= self.hp < self.maxhp * 0.4:
+                health_img.image = load_image(f"Sprites/Health4.png")
+                health_img.rect = health_img.image.get_rect()
+                health_img.rect.x = 450
+                health_img.rect.y = 600
+            elif 0.4 <= self.hp < self.maxhp * 0.6:
+                health_img.image = load_image(f"Sprites/Health3.png")
+                health_img.rect = health_img.image.get_rect()
+                health_img.rect.x = 450
+                health_img.rect.y = 600
+            elif 0.6 <= self.hp < self.maxhp * 0.8:
+                health_img.image = load_image(f"Sprites/Health2.png")
+                health_img.rect = health_img.image.get_rect()
+                health_img.rect.x = 450
+                health_img.rect.y = 600
+            elif 0.8 <= self.hp <= self.maxhp:
+                health_img.image = load_image(f"Sprites/Health1.png")
+                health_img.rect = health_img.image.get_rect()
+                health_img.rect.x = 450
+                health_img.rect.y = 600
+            else:
+                health_img.image = load_image(f"Sprites/Health5.png")
+                health_img.rect = health_img.image.get_rect()
+                health_img.rect.x = 450
+                health_img.rect.y = 600
 
             health_gr.draw(scr)
+            strin = font.render(f"{self.hp}/{self.maxhp}", 1, pygame.Color('white'))
+            hp_rect = strin.get_rect()
+            hp_rect.y = 570
+            hp_rect.x = 575
+            screen.blit(strin, hp_rect)
 
     def gameplay(self):
         self.generate_room(1)
@@ -263,11 +313,41 @@ class Game:
         game = self
         active_scr = self
 
+    def open_chest(self):
+        self.item = chance = random.randint(0, 100)
+        if 0 < chance < 20:
+            self.item = str(random.choice(self.cur.execute(f"""select name, type, healsordamages 
+            from items 
+            where dropstage = 1
+            and type like 'Damages'""").fetchall()))[2:-2].split("', '")
+        else:
+            self.item = str(random.choice(self.cur.execute(f"""select name, type, healsordamages 
+            from items 
+            where dropstage = 1
+            and type like 'Heals'""").fetchall()))[2:-2].split("', '")
+
+        self.choice = True
+
+    def attack(self):
+        for i in range(self.player_x - 1, self.player_x + 2):
+            for j in range(self.player_y - 1, self.player_y + 2):
+                try:
+                    if self.board[i][j] != 0:
+                        if self.board[i][j][0] == "enemy":
+                            if self.board[i][j][4] == "Hostile":
+                                self.board[i][j][2] -= self.dmg
+                                self.hp -= self.board[i][j][3]
+                                if self.board[i][j][2] <= 0:
+                                    self.board[i][j] = 0
+                except IndexError:
+                    pass
+
 
 class ShopRoom:
     def __init__(self):
         self.player_x = 2
         self.player_y = 3
+        self.hp, self.maxhp = ultra_game.hp, ultra_game.maxhp
         self.spr_time = 0
         self.spr_frame = 0
         self.clock = pygame.time.Clock()
@@ -369,12 +449,38 @@ class ShopRoom:
                 self.spr_frame = 0
                 self.spr_time = 0
 
-            health_img.image = load_image(f"Sprites/HealthBar1.png")
-            health_img.rect = health_img.image.get_rect()
-            health_img.rect.x = 450
-            health_img.rect.y = 600
+            if 0.2 <= self.hp < self.maxhp * 0.4:
+                health_img.image = load_image(f"Sprites/Health4.png")
+                health_img.rect = health_img.image.get_rect()
+                health_img.rect.x = 450
+                health_img.rect.y = 600
+            elif 0.4 <= self.hp < self.maxhp * 0.6:
+                health_img.image = load_image(f"Sprites/Health3.png")
+                health_img.rect = health_img.image.get_rect()
+                health_img.rect.x = 450
+                health_img.rect.y = 600
+            elif 0.6 <= self.hp < self.maxhp * 0.8:
+                health_img.image = load_image(f"Sprites/Health2.png")
+                health_img.rect = health_img.image.get_rect()
+                health_img.rect.x = 450
+                health_img.rect.y = 600
+            elif 0.8 <= self.hp <= self.maxhp:
+                health_img.image = load_image(f"Sprites/Health1.png")
+                health_img.rect = health_img.image.get_rect()
+                health_img.rect.x = 450
+                health_img.rect.y = 600
+            else:
+                health_img.image = load_image(f"Sprites/Health5.png")
+                health_img.rect = health_img.image.get_rect()
+                health_img.rect.x = 450
+                health_img.rect.y = 600
 
             health_gr.draw(scr)
+            strin = font.render(f"{self.hp}/{self.maxhp}", 1, pygame.Color('white'))
+            hp_rect = strin.get_rect()
+            hp_rect.y = 570
+            hp_rect.x = 575
+            screen.blit(strin, hp_rect)
 
     def interact(self, cell_x, cell_y, keys):
         if (self.board[cell_x][cell_y] == 0 or
@@ -408,23 +514,24 @@ class ShopRoom:
             self.choice = True
 
     def move(self, iterations, direction):
-        for _ in range(iterations):
-            time.sleep(0.4 / iterations)
+        if not self.choice:
+            for _ in range(iterations):
+                time.sleep(0.4 / iterations)
 
-            if direction == "w":
-                self.player_y -= 1 / iterations
-            elif direction == "a":
-                self.player_x -= 1 / iterations
-            elif direction == "s":
-                self.player_y += 1 / iterations
-            elif direction == "d":
-                self.player_x += 1 / iterations
+                if direction == "w":
+                    self.player_y -= 1 / iterations
+                elif direction == "a":
+                    self.player_x -= 1 / iterations
+                elif direction == "s":
+                    self.player_y += 1 / iterations
+                elif direction == "d":
+                    self.player_x += 1 / iterations
 
-            screen.fill((0, 0, 0))
-            active_scr.render(screen)
-            pygame.display.flip()
-        self.player_x = round(self.player_x)
-        self.player_y = round(self.player_y)
+                screen.fill((0, 0, 0))
+                active_scr.render(screen)
+                pygame.display.flip()
+            self.player_x = round(self.player_x)
+            self.player_y = round(self.player_y)
 
 
 class PreGameRoom(Game):
@@ -498,6 +605,9 @@ class PreGameRoom(Game):
             screen.fill((0, 0, 0))
             Game()
 
+    def attack(self):
+        pass
+
 
 class button:
     def __init__(self, scrn, clr, x, y, x1, y1, w):
@@ -553,10 +663,17 @@ def take_item(name, typ, amount):
             ultra_game.equipped_weapon = name
     elif typ == "Heals":
         ultra_game.hp += int(amount)
-        if ultra_game.hp > ultra_game.maxhp:
-            ultra_game.hp = ultra_game.maxhp
+        if ultra_game != game:
+            game.hp += int(amount)
+    if ultra_game.hp > ultra_game.maxhp:
+        ultra_game.hp = ultra_game.maxhp
+        game.hp = ultra_game.maxhp
 
     game.item_sold = True
+    game.choice = False
+
+
+def loose_item():
     game.choice = False
 
 
@@ -570,6 +687,7 @@ board_group = pygame.sprite.Group()
 player = pygame.sprite.Group()
 entity_gr = pygame.sprite.Group()
 wall_gr = pygame.sprite.Group()
+chest_gr = pygame.sprite.Group()
 esha_gr = pygame.sprite.Group()
 item_gr = pygame.sprite.Group()
 health_gr = pygame.sprite.Group()
@@ -577,6 +695,7 @@ health_gr = pygame.sprite.Group()
 board_img = pygame.sprite.Sprite(board_group)
 esha_img = pygame.sprite.Sprite(esha_gr)
 wall_img = pygame.sprite.Sprite(wall_gr)
+chest_img = pygame.sprite.Sprite(chest_gr)
 player_spr = pygame.sprite.Sprite(player)
 entities = pygame.sprite.Sprite(entity_gr)
 item_img = pygame.sprite.Sprite(item_gr)
@@ -594,6 +713,8 @@ game = None
 ultra_game = None
 
 loading = True
+
+font = pygame.font.Font(None, 30)
 
 running = True
 while running:
@@ -622,6 +743,8 @@ while running:
                 elif key[pygame.K_d]:
                     if game.player_x + 1 in range(0, 11):
                         game.interact(game.player_x + 1, game.player_y, "d")
+                elif key[pygame.K_e]:
+                    game.attack()
     screen.fill((0, 0, 0))
     active_scr.render(screen)
     pygame.display.flip()
