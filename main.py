@@ -100,6 +100,10 @@ class Game:
 
         self.choice = False
         self.item = []
+        self.heal_time = 0
+        self.amount = 0
+        self.dmg_x = 0
+        self.dmg_y = 0
 
         self.gameplay()
 
@@ -122,6 +126,8 @@ class Game:
                     elif 25 <= chance < 28:
                         self.board[k][j] = ["chest",]
         self.generate_escape_hatch()
+        for klh in self.board:
+            print(klh)
 
     def interact(self, cell_x, cell_y, keys):
         if (self.board[cell_x][cell_y] == 0 or
@@ -166,7 +172,7 @@ class Game:
         global chest_img
         global esha_img
         global loading
-        global font
+        global hpfont
 
         if loading:
             if 0 <= self.spr_time / 1000 <= 1.5:
@@ -187,8 +193,8 @@ class Game:
 
         elif self.choice:
             item = button(scr, (0, 79, 153), 400, 50, 400, 400, 3)
-            take = button(scr, (0, 79, 153), 150, 525, 400, 100, 3)
-            loose = button(scr, (0, 79, 153), 650, 525, 400, 100, 3)
+            take = button(scr, (0, 79, 153), 650, 525, 400, 100, 3)
+            loose = button(scr, (0, 79, 153), 150, 525, 400, 100, 3)
 
             take.assign_func(take_item, *self.item)
             loose.assign_func(loose_item)
@@ -279,16 +285,35 @@ class Game:
                 health_img.rect.y = 600
 
             health_gr.draw(scr)
-            strin = font.render(f"{self.hp}/{self.maxhp}", 1, pygame.Color('white'))
+            strin = hpfont.render(f"{self.hp}/{self.maxhp}", 1, pygame.Color('white'))
             hp_rect = strin.get_rect()
             hp_rect.y = 570
             hp_rect.x = 575
             screen.blit(strin, hp_rect)
 
+            if self.heal_time <= 15:
+                if self.amount != 0:
+                    if self.amount > 0:
+                        heal = healordmg_font.render(f"+{self.amount}", 1, pygame.Color('green'))
+                        heal_rect = heal.get_rect()
+                        heal_rect.y = 325
+                        heal_rect.x = 590
+                        screen.blit(heal, heal_rect)
+                    else:
+                        dmg = healordmg_font.render(f"{self.amount}", 1, pygame.Color('red'))
+                        dmg_rect = dmg.get_rect()
+                        dmg_rect.y = 325
+                        dmg_rect.x = 590
+                        screen.blit(dmg, dmg_rect)
+                        dmg = healordmg_font.render(f"-{self.dmg}", 1, pygame.Color('red'))
+                        dmg_rect = dmg.get_rect()
+                        dmg_rect.y = 325 + (self.dmg_y - self.player_y) * 200
+                        dmg_rect.x = 590 + (self.dmg_x - self.player_x) * 200
+                        screen.blit(dmg, dmg_rect)
+                self.heal_time += self.clock.tick()
+
     def gameplay(self):
         self.generate_room(1)
-        for klh in self.board:
-            print(klh)
 
     def generate_escape_hatch(self):
         self.escape_hatch = [random.randint(0, 7), random.randint(0, 7)]
@@ -301,6 +326,7 @@ class Game:
         global game
         global active_scr
         global loading
+        global score
 
         loading = True
 
@@ -313,7 +339,11 @@ class Game:
         game = self
         active_scr = self
 
+        score += random.randint(400, 600)
+
     def open_chest(self):
+        global score
+
         self.item = chance = random.randint(0, 100)
         if 0 < chance < 20:
             self.item = str(random.choice(self.cur.execute(f"""select name, type, healsordamages 
@@ -328,17 +358,30 @@ class Game:
 
         self.choice = True
 
+        score += random.randint(25, 50)
+
     def attack(self):
+        global score
+
         for i in range(self.player_x - 1, self.player_x + 2):
             for j in range(self.player_y - 1, self.player_y + 2):
                 try:
-                    if self.board[i][j] != 0:
-                        if self.board[i][j][0] == "enemy":
-                            if self.board[i][j][4] == "Hostile":
-                                self.board[i][j][2] -= self.dmg
-                                self.hp -= self.board[i][j][3]
-                                if self.board[i][j][2] <= 0:
-                                    self.board[i][j] = 0
+                    if i in range(0, 8):
+                        if j in range(0, 8):
+                            if self.board[i][j] != 0:
+                                if self.board[i][j][0] == "enemy":
+                                    if self.board[i][j][4] == "Hostile":
+                                        self.board[i][j][2] -= self.dmg
+                                        self.amount = -self.board[i][j][3]
+                                        self.heal_time = 0
+                                        self.hp -= self.board[i][j][3]
+                                        if self.hp <= 0:
+                                            Game_over()
+                                        self.dmg_x = i
+                                        self.dmg_y = j
+                                        if self.board[i][j][2] <= 0:
+                                            self.board[i][j] = 0
+                                            score += random.randint(75, 100)
                 except IndexError:
                     pass
 
@@ -367,6 +410,8 @@ class ShopRoom:
         self.item1 = []
         self.item2 = []
         self.choice = False
+        self.heal_time = 0
+        self.amount = 0
 
         self.con = sqlite3.connect("data/Shinoki`s Eye.sqlite")
         self.cur = self.con.cursor()
@@ -476,11 +521,21 @@ class ShopRoom:
                 health_img.rect.y = 600
 
             health_gr.draw(scr)
-            strin = font.render(f"{self.hp}/{self.maxhp}", 1, pygame.Color('white'))
+            strin = hpfont.render(f"{self.hp}/{self.maxhp}", 1, pygame.Color('white'))
             hp_rect = strin.get_rect()
             hp_rect.y = 570
             hp_rect.x = 575
             screen.blit(strin, hp_rect)
+
+            if self.heal_time <= 15:
+                if self.amount != 0:
+                    if self.amount > 0:
+                        heal = healordmg_font.render(f"+{self.amount}", 1, pygame.Color('green'))
+                        heal_rect = heal.get_rect()
+                        heal_rect.y = 325
+                        heal_rect.x = 590
+                        screen.blit(heal, heal_rect)
+                self.heal_time += self.clock.tick()
 
     def interact(self, cell_x, cell_y, keys):
         if (self.board[cell_x][cell_y] == 0 or
@@ -512,6 +567,9 @@ class ShopRoom:
                             where dropstage = 1
                             and type like 'Heals'""").fetchall()))[2:-2].split("', '")
             self.choice = True
+
+    def attack(self):
+        pass
 
     def move(self, iterations, direction):
         if not self.choice:
@@ -609,6 +667,80 @@ class PreGameRoom(Game):
         pass
 
 
+class Game_over:
+    def __init__(self):
+        global active_scr
+        active_scr = self
+
+        global ultra_game
+        ultra_game = None
+
+        global game
+        game = None
+
+        self.clock = pygame.time.Clock()
+        self.time = 0
+
+        global starting_time
+        global ending_time
+        global game_duration
+        ending_time = datetime.datetime.now()
+        game_duration = ending_time - starting_time
+
+    def render(self, scr):
+        global player_spr
+        global gameover_btn_img
+        global score
+        global game_duration
+
+        player_spr.image = load_image(f"Sprites/Kinglying.png")
+        player_spr.rect = player_spr.image.get_rect()
+        player_spr.rect.x = 500
+        player_spr.rect.y = 250
+        player.draw(scr)
+
+        if self.time / 1000 >= 4:
+            strin = game_over_font.render(f"GAME OVER", 1, pygame.Color('red'))
+            str_rect = strin.get_rect()
+            str_rect.y = 100
+            str_rect.x = 275
+            screen.blit(strin, str_rect)
+            strin = healordmg_font.render(f"Your Score is {score}", 1, pygame.Color('white'))
+            str_rect = strin.get_rect()
+            str_rect.y = 200
+            str_rect.x = 450
+            screen.blit(strin, str_rect)
+            strin = healordmg_font.render(f"Your Time in Game is {str(game_duration)[:7]}",
+                                          1, pygame.Color('white'))
+            str_rect = strin.get_rect()
+            str_rect.y = 250
+            str_rect.x = 350
+            screen.blit(strin, str_rect)
+
+        if self.time / 1000 >= 7:
+            mainmenu_btn = button(scr, (0, 79, 153), 650, 525, 400, 100, 3)
+            quit_btn = button(scr, (0, 79, 153), 150, 525, 400, 100, 3)
+
+            mainmenu_btn.assign_func(Starting_screen)
+            quit_btn.assign_func(sys.exit)
+
+            gameover_btn_img.image = load_image("Sprites/quit_btn_spr1.png")
+            gameover_btn_img.rect = gameover_btn_img.image.get_rect()
+            gameover_btn_img.rect.x = 153
+            gameover_btn_img.rect.y = 528
+
+            gameover_gr.draw(scr)
+
+            gameover_btn_img.image = load_image("Sprites/main_menu_btn_spr.png")
+            gameover_btn_img.rect = gameover_btn_img.image.get_rect()
+            gameover_btn_img.rect.x = 653
+            gameover_btn_img.rect.y = 528
+
+            gameover_gr.draw(scr)
+
+        self.time += self.clock.tick()
+
+
 class button:
     def __init__(self, scrn, clr, x, y, x1, y1, w):
         self.scrn = scrn
@@ -647,24 +779,33 @@ def load_image(nm, colorkey=None):
 def take_item(name, typ, amount):
     global ultra_game
     global game
+    game.spr_time = 0
     if typ == "Damages":
         if "-" in amount:
             am = [int(i) for i in amount.split(" - ")]
             ultra_game.maxhp = 12 - am[1]
             ultra_game.dmg = am[0]
             ultra_game.equipped_weapon = name
+            if ultra_game != game:
+                game.maxhp = 12 - am[1]
         elif "+" in amount:
             am = [int(i) for i in amount.split(" + ")]
             ultra_game.maxhp = 12 + am[1]
             ultra_game.dmg = am[0]
             ultra_game.equipped_weapon = name
+            if ultra_game != game:
+                game.maxhp = 12 + am[1]
         else:
             ultra_game.dmg = amount
             ultra_game.equipped_weapon = name
     elif typ == "Heals":
         ultra_game.hp += int(amount)
+        ultra_game.amount = int(amount)
+        ultra_game.heal_time = 0
         if ultra_game != game:
             game.hp += int(amount)
+            game.amount = int(amount)
+            game.heal_time = 0
     if ultra_game.hp > ultra_game.maxhp:
         ultra_game.hp = ultra_game.maxhp
         game.hp = ultra_game.maxhp
@@ -691,6 +832,7 @@ chest_gr = pygame.sprite.Group()
 esha_gr = pygame.sprite.Group()
 item_gr = pygame.sprite.Group()
 health_gr = pygame.sprite.Group()
+gameover_gr = pygame.sprite.Group()
 
 board_img = pygame.sprite.Sprite(board_group)
 esha_img = pygame.sprite.Sprite(esha_gr)
@@ -700,6 +842,7 @@ player_spr = pygame.sprite.Sprite(player)
 entities = pygame.sprite.Sprite(entity_gr)
 item_img = pygame.sprite.Sprite(item_gr)
 health_img = pygame.sprite.Sprite(health_gr)
+gameover_btn_img = pygame.sprite.Sprite(gameover_gr)
 
 start_scr = Starting_screen()
 active_scr = start_scr
@@ -712,9 +855,13 @@ pregamewait = False
 game = None
 ultra_game = None
 
+score = 0
+
 loading = True
 
-font = pygame.font.Font(None, 30)
+hpfont = pygame.font.Font(None, 30)
+healordmg_font = pygame.font.Font(None, 50)
+game_over_font = pygame.font.Font(None, 150)
 
 running = True
 while running:
@@ -723,25 +870,19 @@ while running:
             running = False
         key = pygame.key.get_pressed()
         if event.type == pygame.KEYDOWN:
-            if key[pygame.K_ESCAPE] and active_scr == Starting_screen and active_scr.options_opened:
-                active_scr.options_opened = False
-            if key[pygame.K_ESCAPE] and game and not game.options_opened:
-                game.options_opened = True
-            elif key[pygame.K_ESCAPE] and game and game.options_opened:
-                game.options_opened = False
 
             if game:
                 if key[pygame.K_w]:
-                    if game.player_y - 1 in range(0, 11):
+                    if game.player_y - 1 in range(0, 8):
                         game.interact(game.player_x, game.player_y - 1, "w")
                 elif key[pygame.K_a]:
-                    if game.player_x - 1 in range(0, 11):
+                    if game.player_x - 1 in range(0, 8):
                         game.interact(game.player_x - 1, game.player_y, "a")
                 elif key[pygame.K_s]:
-                    if game.player_y + 1 in range(0, 11):
+                    if game.player_y + 1 in range(0, 8):
                         game.interact(game.player_x, game.player_y + 1, "s")
                 elif key[pygame.K_d]:
-                    if game.player_x + 1 in range(0, 11):
+                    if game.player_x + 1 in range(0, 8):
                         game.interact(game.player_x + 1, game.player_y, "d")
                 elif key[pygame.K_e]:
                     game.attack()
