@@ -12,8 +12,6 @@ class Starting_screen:
         global active_scr
         active_scr = self
 
-        self.options_opened = False
-
         bkgr = pygame.sprite.Sprite(start_scr_sprites_group)
         bkgr.image = load_image("Sprites/logo.png")
         bkgr.rect = bkgr.image.get_rect()
@@ -38,22 +36,146 @@ class Starting_screen:
         quits.rect.x = 403
         quits.rect.y = 503
 
+        reset_stats()
+
     def render(self, scrn):
-        if not self.options_opened:
-            start_scr_sprites_group.draw(screen)
+        start_scr_sprites_group.draw(screen)
 
-            start_btn = button(scrn, (0, 79, 153), 400, 330, 400, 50, 3)
-            options_btn = button(scrn, (0, 79, 153), 400, 415, 400, 50, 3)
-            quit_btn = button(scrn, (0, 79, 153), 400, 500, 400, 50, 3)
+        start_btn = button(scrn, (0, 79, 153), 400, 330, 400, 50, 3)
+        options_btn = button(scrn, (0, 79, 153), 400, 415, 400, 50, 3)
+        quit_btn = button(scrn, (0, 79, 153), 400, 500, 400, 50, 3)
 
-            start_btn.assign_func(PreGameRoom)
-            options_btn.assign_func(self.options)
-            quit_btn.assign_func(sys.exit)
-        else:
-            pass
+        start_btn.assign_func(PreGameRoom)
+        options_btn.assign_func(Options)
+        quit_btn.assign_func(sys.exit)
 
-    def options(self):
-        self.options_opened = True
+
+class Options:
+    def __init__(self):
+        global active_scr
+        active_scr = self
+
+        self.stats_showing = False
+
+        file = open("data/stats.txt", "r")
+        self.content = [int(i) for i in file.read().split("\n")]
+        file.close()
+
+    def render(self, scr):
+        global keys_used
+        global choice_btn_img
+
+        if not self.stats_showing:
+            control_btn = button(scr, (0, 79, 153), 400, 50, 400, 100, 3)
+            stats_btn = button(scr, (0, 79, 153), 400, 200, 400, 100, 3)
+            back_btn = button(scr, (0, 79, 153), 950, 550, 200, 100, 3)
+
+            control_btn.assign_func(self.change_controls)
+            stats_btn.assign_func(self.show_stats)
+            back_btn.assign_func(Starting_screen)
+
+            choice_btn_img.image = load_image(f"Sprites/control_btn_img_{keys_used}.png")
+            choice_btn_img.rect = choice_btn_img.image.get_rect()
+            choice_btn_img.rect.x = 403
+            choice_btn_img.rect.y = 53
+            choice_btn_gr.draw(scr)
+
+            choice_btn_img.image = load_image(f"Sprites/stats_btn_img.png")
+            choice_btn_img.rect = choice_btn_img.image.get_rect()
+            choice_btn_img.rect.x = 403
+            choice_btn_img.rect.y = 203
+            choice_btn_gr.draw(scr)
+
+            choice_btn_img.image = load_image(f"Sprites/back_btn_img.png")
+            choice_btn_img.rect = choice_btn_img.image.get_rect()
+            choice_btn_img.rect.x = 953
+            choice_btn_img.rect.y = 553
+            choice_btn_gr.draw(scr)
+
+        elif self.stats_showing:
+            strin = game_over_font.render(f"STATS", 1, (0, 79, 153))
+            str_rect = strin.get_rect()
+            str_rect.y = 25
+            str_rect.x = 425
+            screen.blit(strin, str_rect)
+
+            strin = healordmg_font.render(f"Games played: {self.content[0]}", 1, pygame.Color('white'))
+            strin_rect = strin.get_rect()
+            strin_rect.y = 150
+            strin_rect.x = 450
+            screen.blit(strin, strin_rect)
+
+            strin = healordmg_font.render(f"Games won: {self.content[1]}", 1, pygame.Color('white'))
+            strin_rect = strin.get_rect()
+            strin_rect.y = 200
+            strin_rect.x = 470
+            screen.blit(strin, strin_rect)
+
+            strin = healordmg_font.render(f"Games lost: {self.content[2]}", 1, pygame.Color('white'))
+            strin_rect = strin.get_rect()
+            strin_rect.y = 250
+            strin_rect.x = 475
+            screen.blit(strin, strin_rect)
+
+            strin = healordmg_font.render(f"Total kills: {self.content[3]}", 1, pygame.Color('white'))
+            strin_rect = strin.get_rect()
+            strin_rect.y = 325
+            strin_rect.x = 490
+            screen.blit(strin, strin_rect)
+
+            strin = healordmg_font.render(f"Chests opened: {self.content[4]}", 1, pygame.Color('white'))
+            strin_rect = strin.get_rect()
+            strin_rect.y = 375
+            strin_rect.x = 450
+            screen.blit(strin, strin_rect)
+
+            strin = healordmg_font.render(f"Total damage: {self.content[5]}", 1, pygame.Color('white'))
+            strin_rect = strin.get_rect()
+            strin_rect.y = 450
+            strin_rect.x = 460
+            screen.blit(strin, strin_rect)
+
+            strin = healordmg_font.render(f"Total HP healed: {self.content[6]}", 1, pygame.Color('white'))
+            strin_rect = strin.get_rect()
+            strin_rect.y = 500
+            strin_rect.x = 440
+            screen.blit(strin, strin_rect)
+
+            strin = healordmg_font.render(f"Steps made: {self.content[7]}", 1, pygame.Color('white'))
+            strin_rect = strin.get_rect()
+            strin_rect.y = 550
+            strin_rect.x = 470
+            screen.blit(strin, strin_rect)
+
+            strin = healordmg_font.render(f"Total score: {self.content[8]}", 1, pygame.Color('white'))
+            strin_rect = strin.get_rect()
+            strin_rect.y = 625
+            strin_rect.x = 470
+            screen.blit(strin, strin_rect)
+
+            back_btn = button(scr, (0, 79, 153), 950, 50, 200, 100, 3)
+            back_btn.assign_func(Options)
+            choice_btn_img.image = load_image(f"Sprites/back_btn_img.png")
+            choice_btn_img.rect = choice_btn_img.image.get_rect()
+            choice_btn_img.rect.x = 953
+            choice_btn_img.rect.y = 53
+            choice_btn_gr.draw(scr)
+
+    def change_controls(self):
+        global keys_used
+
+        if keys_used == "WASD":
+            keys_used = "Arrows"
+        elif keys_used == "Arrows":
+            keys_used = "WASD"
+
+        time.sleep(0.5)
+
+    def show_stats(self):
+        self.stats_showing = True
+
+    def dont_show_stats(self):
+        self.stats_showing = False
 
 
 class Game:
@@ -100,6 +222,8 @@ class Game:
 
         self.choice = False
         self.item = []
+        self.xp_amount = 0
+        self.xp_time = 0
         self.heal_time = 0
         self.amount = 0
         self.dmg_x = 0
@@ -121,13 +245,21 @@ class Game:
                         if k > 1 and j > 1:
                             enemy = list(random.choice(self.cur.execute(f"""select name, hp, atk, type 
                             from enemies 
-                            where stage = {stage}""").fetchall()))
+                            where stage = {stage}
+                            and type like 'Hostile'""").fetchall()))
                             self.board[k][j] = ["enemy", enemy[0], enemy[1], int(enemy[2]), enemy[3]]
                     elif 25 <= chance < 28:
                         self.board[k][j] = ["chest",]
+        enemy = list(random.choice(self.cur.execute(f"""select name, hp, atk, type 
+        from enemies 
+        where stage = {stage}
+        and type like 'Neutral'""").fetchall()))
+        self.board[random.randint(1, 7)][random.randint(1, 7)] = ["enemy", enemy[0], enemy[1], int(enemy[2]), enemy[3]]
         self.generate_escape_hatch()
-        for klh in self.board:
-            print(klh)
+        for i in range(len(self.board)):
+            for j in range(len(self.board[i])):
+                print(self.board[j][i], end=", ")
+            print("\n")
 
     def interact(self, cell_x, cell_y, keys):
         if (self.board[cell_x][cell_y] == 0 or
@@ -140,28 +272,39 @@ class Game:
             self.open_chest()
             self.board[cell_x][cell_y] = 0
 
+        elif self.board[cell_x][cell_y][0] == "enemy":
+            if self.board[cell_x][cell_y][4] == "Neutral":
+                self.open_chest(trader=True)
+                self.board[cell_x][cell_y] = 0
+
     def move(self, iterations, direction):
-        if not self.choice:
-            for _ in range(iterations):
-                time.sleep(0.4 / iterations)
+        global loading
+        global steps_made
 
-                if direction == "w":
-                    self.player_y -= 1 / iterations
-                elif direction == "a":
-                    self.player_x -= 1 / iterations
-                elif direction == "s":
-                    self.player_y += 1 / iterations
-                elif direction == "d":
-                    self.player_x += 1 / iterations
+        if not loading:
+            if not self.choice:
+                for _ in range(iterations):
+                    time.sleep(0.4 / iterations)
 
-                screen.fill((0, 0, 0))
-                active_scr.render(screen)
-                pygame.display.flip()
-            self.player_x = round(self.player_x)
-            self.player_y = round(self.player_y)
-            if self.board[self.player_x][self.player_y] == "escape_hatch":
-                ShopRoom()
-            self.attack()
+                    if direction == "w":
+                        self.player_y -= 1 / iterations
+                    elif direction == "a":
+                        self.player_x -= 1 / iterations
+                    elif direction == "s":
+                        self.player_y += 1 / iterations
+                    elif direction == "d":
+                        self.player_x += 1 / iterations
+
+                    screen.fill((0, 0, 0))
+                    active_scr.render(screen)
+                    pygame.display.flip()
+                self.player_x = round(self.player_x)
+                self.player_y = round(self.player_y)
+                if self.board[self.player_x][self.player_y] == "escape_hatch":
+                    ShopRoom()
+                self.attack()
+
+                steps_made += 1
 
     def render(self, scr):
         scr.fill((0, 0, 0))
@@ -173,6 +316,8 @@ class Game:
         global esha_img
         global loading
         global hpfont
+        global room_img
+        global choice_btn_img
 
         if loading:
             if 0 <= self.spr_time / 1000 <= 1.5:
@@ -195,6 +340,20 @@ class Game:
             item = button(scr, (0, 79, 153), 400, 50, 400, 400, 3)
             take = button(scr, (0, 79, 153), 650, 525, 400, 100, 3)
             loose = button(scr, (0, 79, 153), 150, 525, 400, 100, 3)
+
+            choice_btn_img.image = load_image(f"Sprites/lose_btn_img.png")
+            choice_btn_img.rect = choice_btn_img.image.get_rect()
+            choice_btn_img.rect.x = 153
+            choice_btn_img.rect.y = 528
+
+            choice_btn_gr.draw(scr)
+
+            choice_btn_img.image = load_image(f"Sprites/take_btn_img.png")
+            choice_btn_img.rect = choice_btn_img.image.get_rect()
+            choice_btn_img.rect.x = 653
+            choice_btn_img.rect.y = 528
+
+            choice_btn_gr.draw(scr)
 
             take.assign_func(take_item, *self.item)
             loose.assign_func(loose_item)
@@ -243,7 +402,6 @@ class Game:
                         chest_img.rect.y = 250 + 200 * j - 200 * self.player_y
                         chest_gr.draw(scr)
                     if self.board[i][j] != 0 and self.board[i][j][0] == "enemy":
-                        if self.board[i][j][1] != "Mole" and self.board[i][j][1] != "WanderingCat":
                             entities.image = load_image(f"Sprites/{self.board[i][j][1]}{self.spr_frame}.png")
                             entities.rect = entities.image.get_rect()
                             entities.rect.x = 500 + 200 * i - 200 * self.player_x
@@ -312,6 +470,23 @@ class Game:
                         screen.blit(dmg, dmg_rect)
                 self.heal_time += self.clock.tick()
 
+            if self.xp_time <= 15:
+                if self.xp_amount != 0:
+                    if self.xp_amount > 0:
+                        xp = healordmg_font.render(f"+{self.xp_amount}XP", 1, pygame.Color('yellow'))
+                        xp_rect = xp.get_rect()
+                        xp_rect.y = 345
+                        xp_rect.x = 20
+                        screen.blit(xp, xp_rect)
+                self.xp_time += self.clock.tick()
+
+            room_img.image = load_image(f"Sprites/Room{str(self.room)}.png")
+            room_img.rect = room_img.image.get_rect()
+            room_img.rect.x = 550
+            room_img.rect.y = 50
+
+            room_gr.draw(scr)
+
     def gameplay(self):
         self.generate_room(1)
 
@@ -328,40 +503,57 @@ class Game:
         global loading
         global score
 
-        loading = True
+        for _ in range(8):
+            print("\n")
 
-        self.room += 1
-        self.player_x, self.player_y = 0, 0
-        self.generate_room(1)
-        self.spr_time = 0
-        self.clock.tick()
+        if self.room < 7:
+            loading = True
 
-        game = self
-        active_scr = self
+            self.room += 1
+            self.player_x, self.player_y = 0, 0
+            self.generate_room(1)
+            self.spr_time = 0
+            self.clock.tick()
 
-        score += random.randint(400, 600)
+            game = self
+            active_scr = self
 
-    def open_chest(self):
-        global score
-
-        self.item = chance = random.randint(0, 100)
-        if 0 < chance < 20:
-            self.item = str(random.choice(self.cur.execute(f"""select name, type, healsordamages 
-            from items 
-            where dropstage = 1
-            and type like 'Damages'""").fetchall()))[2:-2].split("', '")
+            adding = random.randint(400, 600)
+            score += adding
+            self.xp_amount = adding
+            self.xp_time = 0
         else:
+            You_win()
+
+    def open_chest(self, trader=False):
+        global score
+        global chests_opened
+
+        if not trader:
+            self.item = chance = random.randint(0, 100)
+            if 0 < chance < 10:
+                self.item = str(random.choice(self.cur.execute(f"""select name, type, healsordamages 
+                from items 
+                where dropstage = 1
+                and type like 'Damages'""").fetchall()))[2:-2].split("', '")
+            else:
+                self.item = str(random.choice(self.cur.execute(f"""select name, type, healsordamages 
+                from items 
+                where dropstage = 1
+                and type like 'Heals'""").fetchall()))[2:-2].split("', '")
+            self.choice = True
+            chests_opened += 1
+        elif trader:
             self.item = str(random.choice(self.cur.execute(f"""select name, type, healsordamages 
-            from items 
-            where dropstage = 1
-            and type like 'Heals'""").fetchall()))[2:-2].split("', '")
-
-        self.choice = True
-
-        score += random.randint(25, 50)
+                from items 
+                where dropstage = 1
+                and type like 'Damages'""").fetchall()))[2:-2].split("', '")
+            self.choice = True
 
     def attack(self):
         global score
+        global enemies_killed
+        global damage_dealt
 
         for i in range(self.player_x - 1, self.player_x + 2):
             for j in range(self.player_y - 1, self.player_y + 2):
@@ -371,17 +563,22 @@ class Game:
                             if self.board[i][j] != 0:
                                 if self.board[i][j][0] == "enemy":
                                     if self.board[i][j][4] == "Hostile":
-                                        self.board[i][j][2] -= self.dmg
+                                        self.board[i][j][2] -= int(self.dmg)
+                                        damage_dealt += int(self.dmg)
                                         self.amount = -self.board[i][j][3]
                                         self.heal_time = 0
                                         self.hp -= self.board[i][j][3]
                                         if self.hp <= 0:
-                                            Game_over()
+                                            Game_over(self.room)
                                         self.dmg_x = i
                                         self.dmg_y = j
                                         if self.board[i][j][2] <= 0:
                                             self.board[i][j] = 0
-                                            score += random.randint(75, 100)
+                                            adding = random.randint(75, 100)
+                                            score += adding
+                                            self.xp_amount = adding
+                                            self.xp_time = 0
+                                            enemies_killed += 1
                 except IndexError:
                     pass
 
@@ -527,7 +724,7 @@ class ShopRoom:
             hp_rect.x = 575
             screen.blit(strin, hp_rect)
 
-            if self.heal_time <= 15:
+            if self.heal_time <= 20:
                 if self.amount != 0:
                     if self.amount > 0:
                         heal = healordmg_font.render(f"+{self.amount}", 1, pygame.Color('green'))
@@ -572,6 +769,8 @@ class ShopRoom:
         pass
 
     def move(self, iterations, direction):
+        global steps_made
+
         if not self.choice:
             for _ in range(iterations):
                 time.sleep(0.4 / iterations)
@@ -591,13 +790,19 @@ class ShopRoom:
             self.player_x = round(self.player_x)
             self.player_y = round(self.player_y)
 
+        steps_made += 1
+
 
 class PreGameRoom(Game):
     def __init__(self):
         super().__init__()
         self.clock = pygame.time.Clock()
+
         global starting_time
         starting_time = datetime.datetime.now()
+
+        global loading
+        loading = True
 
     def render(self, scr):
         scr.fill((0, 0, 0))
@@ -668,7 +873,9 @@ class PreGameRoom(Game):
 
 
 class Game_over:
-    def __init__(self):
+    def __init__(self, stage):
+        self.stage = stage - 1
+
         global active_scr
         active_scr = self
 
@@ -687,6 +894,8 @@ class Game_over:
         ending_time = datetime.datetime.now()
         game_duration = ending_time - starting_time
 
+        write_file("Lost")
+
     def render(self, scr):
         global player_spr
         global gameover_btn_img
@@ -702,19 +911,25 @@ class Game_over:
         if self.time / 1000 >= 4:
             strin = game_over_font.render(f"GAME OVER", 1, pygame.Color('red'))
             str_rect = strin.get_rect()
-            str_rect.y = 100
+            str_rect.y = 50
             str_rect.x = 275
             screen.blit(strin, str_rect)
             strin = healordmg_font.render(f"Your Score is {score}", 1, pygame.Color('white'))
             str_rect = strin.get_rect()
-            str_rect.y = 200
+            str_rect.y = 175
             str_rect.x = 450
             screen.blit(strin, str_rect)
             strin = healordmg_font.render(f"Your Time in Game is {str(game_duration)[:7]}",
                                           1, pygame.Color('white'))
             str_rect = strin.get_rect()
-            str_rect.y = 250
+            str_rect.y = 225
             str_rect.x = 350
+            screen.blit(strin, str_rect)
+            strin = healordmg_font.render(f"Rooms passed: {self.stage}",
+                                          1, pygame.Color('white'))
+            str_rect = strin.get_rect()
+            str_rect.y = 275
+            str_rect.x = 450
             screen.blit(strin, str_rect)
 
         if self.time / 1000 >= 7:
@@ -738,6 +953,141 @@ class Game_over:
 
             gameover_gr.draw(scr)
 
+        self.time += self.clock.tick()
+
+
+class You_win:
+    def __init__(self):
+        global active_scr
+        active_scr = self
+
+        global ultra_game
+        ultra_game = None
+
+        global game
+        game = None
+
+        self.clock = pygame.time.Clock()
+        self.time = 0
+        self.spr_clock = pygame.time.Clock()
+        self.spr_time = 0
+        self.spr_frame = "0"
+        self.moving = False
+
+        global starting_time
+        global ending_time
+        global game_duration
+        ending_time = datetime.datetime.now()
+        game_duration = ending_time - starting_time
+
+        write_file("Won")
+
+    def render(self, scr):
+        global player_spr
+        global gameover_btn_img
+        global score
+        global game_duration
+        global chests_opened
+        global enemies_killed
+
+        if not self.moving:
+            player_spr.image = load_image(f"Sprites/King{self.spr_frame}.png")
+            player_spr.rect = player_spr.image.get_rect()
+            player_spr.rect.x = 500
+            player_spr.rect.y = 250
+            player.draw(scr)
+        if self.moving:
+            player_spr.image = load_image(f"Sprites/King{self.spr_frame}.png")
+            player_spr.rect = player_spr.image.get_rect()
+            player_spr.rect.x = 500 + 200 * (self.time / 1000 - 2)
+            player_spr.rect.y = 250
+            player.draw(scr)
+
+        if self.time / 1000 >= 2:
+            self.moving = True
+
+        if self.time / 1000 >= 9:
+            player_spr.image = load_image(f"Sprites/Shinoki`sEye.png")
+            player_spr.rect = player_spr.image.get_rect()
+            player_spr.rect.x = 550
+            player_spr.rect.y = 0
+            player.draw(scr)
+
+        if self.time / 1000 >= 6:
+            strin = game_over_font.render(f"YOU WIN", 1, pygame.Color('yellow'))
+            str_rect = strin.get_rect()
+            str_rect.y = 75
+            str_rect.x = 50
+            screen.blit(strin, str_rect)
+
+        if self.time / 1000 >= 10:
+            strin = healordmg_font.render(f"Your Score is {score}", 1, pygame.Color('white'))
+            str_rect = strin.get_rect()
+            str_rect.y = 250
+            str_rect.x = 50
+            screen.blit(strin, str_rect)
+
+        if self.time / 1000 >= 11:
+            strin = healordmg_font.render(f"Your Time in Game is {str(game_duration)[:7]}",
+                                          1, pygame.Color('white'))
+            str_rect = strin.get_rect()
+            str_rect.y = 300
+            str_rect.x = 50
+            screen.blit(strin, str_rect)
+
+        if self.time / 1000 >= 12:
+            strin = healordmg_font.render(f"Enemies killed: {enemies_killed}",
+                                          1, pygame.Color('white'))
+            str_rect = strin.get_rect()
+            str_rect.y = 350
+            str_rect.x = 50
+            screen.blit(strin, str_rect)
+
+        if self.time / 1000 >= 13:
+            strin = healordmg_font.render(f"Chests opened: {chests_opened}",
+                                          1, pygame.Color('white'))
+            str_rect = strin.get_rect()
+            str_rect.y = 400
+            str_rect.x = 50
+            screen.blit(strin, str_rect)
+
+        if self.time / 1000 >= 14:
+            mainmenu_btn = button(scr, (0, 79, 153), 650, 525, 400, 100, 3)
+            quit_btn = button(scr, (0, 79, 153), 150, 525, 400, 100, 3)
+
+            mainmenu_btn.assign_func(Starting_screen)
+            quit_btn.assign_func(sys.exit)
+
+            you_win_img.image = load_image("Sprites/quit_btn_spr1.png")
+            you_win_img.rect = you_win_img.image.get_rect()
+            you_win_img.rect.x = 153
+            you_win_img.rect.y = 528
+
+            you_win_gr.draw(scr)
+
+            you_win_img.image = load_image("Sprites/main_menu_btn_spr.png")
+            you_win_img.rect = you_win_img.image.get_rect()
+            you_win_img.rect.x = 653
+            you_win_img.rect.y = 528
+
+            you_win_gr.draw(scr)
+
+        if not self.moving:
+            if self.spr_time >= 1 and self.spr_frame == "0":
+                self.spr_frame = "blink"
+                self.spr_time = 0
+            elif self.spr_time >= 0.4 and self.spr_frame == "blink":
+                self.spr_frame = "0"
+                self.spr_time = 0
+        else:
+            if self.spr_time >= 0.5 and self.spr_frame == "0":
+                self.spr_frame = "1"
+                self.spr_time = 0
+            elif self.spr_time >= 0.5 and self.spr_frame == "1":
+                self.spr_frame = "0"
+                self.spr_time = 0
+
+        self.spr_time += self.spr_clock.tick() / 1000
         self.time += self.clock.tick()
 
 
@@ -779,6 +1129,9 @@ def load_image(nm, colorkey=None):
 def take_item(name, typ, amount):
     global ultra_game
     global game
+    global score
+    global hp_healed
+
     game.spr_time = 0
     if typ == "Damages":
         if "-" in amount:
@@ -798,17 +1151,31 @@ def take_item(name, typ, amount):
         else:
             ultra_game.dmg = amount
             ultra_game.equipped_weapon = name
+        if ultra_game.hp > ultra_game.maxhp:
+            ultra_game.hp = ultra_game.maxhp
+            game.hp = ultra_game.maxhp
     elif typ == "Heals":
-        ultra_game.hp += int(amount)
-        ultra_game.amount = int(amount)
-        ultra_game.heal_time = 0
+        hp_healed += int(amount)
+
+        if ultra_game is game:
+            ultra_game.hp += int(amount)
+            ultra_game.amount = int(amount)
+            ultra_game.heal_time = 0
         if ultra_game != game:
             game.hp += int(amount)
             game.amount = int(amount)
             game.heal_time = 0
-    if ultra_game.hp > ultra_game.maxhp:
+            ultra_game.hp += int(amount)
+            ultra_game.amount = int(amount)
+    if game.hp > game.maxhp:
         ultra_game.hp = ultra_game.maxhp
         game.hp = ultra_game.maxhp
+
+    if game is ultra_game:
+        adding = random.randint(25, 50)
+        score += adding
+        ultra_game.xp_amount = adding
+        ultra_game.xp_time = 0
 
     game.item_sold = True
     game.choice = False
@@ -816,6 +1183,49 @@ def take_item(name, typ, amount):
 
 def loose_item():
     game.choice = False
+
+
+def write_file(result):
+    global score
+    global enemies_killed
+    global chests_opened
+    global damage_dealt
+    global hp_healed
+    global steps_made
+
+    file = open("data/stats.txt", "r")
+    content = [int(i) for i in file.read().split("\n")]
+    file.close()
+
+    content[0] += 1
+    if result == "Won":
+        content[1] += 1
+    elif result == "Lost":
+        content[2] += 1
+    content[3] += enemies_killed
+    content[4] += chests_opened
+    content[5] += damage_dealt
+    content[6] += hp_healed
+    content[7] += steps_made
+    content[8] += score
+
+    for i in range(len(content)):
+        content[i] = str(content[i])
+    file = open("data/stats.txt", "w")
+    file.write("\n".join(content))
+    file.close()
+
+
+def reset_stats():
+    global game_duration
+    global score
+    global enemies_killed
+    global chests_opened
+    global damage_dealt
+    global hp_healed
+    global steps_made
+
+    game_duration, score, enemies_killed, chests_opened, damage_dealt, hp_healed, steps_made = 0, 0, 0, 0, 0, 0, 0
 
 
 pygame.init()
@@ -830,9 +1240,13 @@ entity_gr = pygame.sprite.Group()
 wall_gr = pygame.sprite.Group()
 chest_gr = pygame.sprite.Group()
 esha_gr = pygame.sprite.Group()
+room_gr = pygame.sprite.Group()
 item_gr = pygame.sprite.Group()
+choice_btn_gr = pygame.sprite.Group()
 health_gr = pygame.sprite.Group()
 gameover_gr = pygame.sprite.Group()
+you_win_gr = pygame.sprite.Group()
+controls_btn_gr = pygame.sprite.Group()
 
 board_img = pygame.sprite.Sprite(board_group)
 esha_img = pygame.sprite.Sprite(esha_gr)
@@ -840,9 +1254,13 @@ wall_img = pygame.sprite.Sprite(wall_gr)
 chest_img = pygame.sprite.Sprite(chest_gr)
 player_spr = pygame.sprite.Sprite(player)
 entities = pygame.sprite.Sprite(entity_gr)
+room_img = pygame.sprite.Sprite(room_gr)
 item_img = pygame.sprite.Sprite(item_gr)
+choice_btn_img = pygame.sprite.Sprite(choice_btn_gr)
 health_img = pygame.sprite.Sprite(health_gr)
 gameover_btn_img = pygame.sprite.Sprite(gameover_gr)
+you_win_img = pygame.sprite.Sprite(you_win_gr)
+controls_btn_img = pygame.sprite.Sprite(controls_btn_gr)
 
 start_scr = Starting_screen()
 active_scr = start_scr
@@ -857,11 +1275,19 @@ ultra_game = None
 
 score = 0
 
+enemies_killed = 0
+chests_opened = 0
+damage_dealt = 0
+hp_healed = 0
+steps_made = 0
+
 loading = True
 
 hpfont = pygame.font.Font(None, 30)
 healordmg_font = pygame.font.Font(None, 50)
 game_over_font = pygame.font.Font(None, 150)
+
+keys_used = "WASD"
 
 running = True
 while running:
@@ -872,19 +1298,34 @@ while running:
         if event.type == pygame.KEYDOWN:
 
             if game:
-                if key[pygame.K_w]:
-                    if game.player_y - 1 in range(0, 8):
-                        game.interact(game.player_x, game.player_y - 1, "w")
-                elif key[pygame.K_a]:
-                    if game.player_x - 1 in range(0, 8):
-                        game.interact(game.player_x - 1, game.player_y, "a")
-                elif key[pygame.K_s]:
-                    if game.player_y + 1 in range(0, 8):
-                        game.interact(game.player_x, game.player_y + 1, "s")
-                elif key[pygame.K_d]:
-                    if game.player_x + 1 in range(0, 8):
-                        game.interact(game.player_x + 1, game.player_y, "d")
-                elif key[pygame.K_e]:
+                if keys_used == "WASD":
+                    if key[pygame.K_w]:
+                        if game.player_y - 1 in range(0, 8):
+                            game.interact(game.player_x, game.player_y - 1, "w")
+                    elif key[pygame.K_a]:
+                        if game.player_x - 1 in range(0, 8):
+                            game.interact(game.player_x - 1, game.player_y, "a")
+                    elif key[pygame.K_s]:
+                        if game.player_y + 1 in range(0, 8):
+                            game.interact(game.player_x, game.player_y + 1, "s")
+                    elif key[pygame.K_d]:
+                        if game.player_x + 1 in range(0, 8):
+                            game.interact(game.player_x + 1, game.player_y, "d")
+                elif keys_used == "Arrows":
+                    if key[pygame.K_UP]:
+                        if game.player_y - 1 in range(0, 8):
+                            game.interact(game.player_x, game.player_y - 1, "w")
+                    elif key[pygame.K_LEFT]:
+                        if game.player_x - 1 in range(0, 8):
+                            game.interact(game.player_x - 1, game.player_y, "a")
+                    elif key[pygame.K_DOWN]:
+                        if game.player_y + 1 in range(0, 8):
+                            game.interact(game.player_x, game.player_y + 1, "s")
+                    elif key[pygame.K_RIGHT]:
+                        if game.player_x + 1 in range(0, 8):
+                            game.interact(game.player_x + 1, game.player_y, "d")
+
+                if key[pygame.K_e]:
                     game.attack()
     screen.fill((0, 0, 0))
     active_scr.render(screen)
