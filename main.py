@@ -256,10 +256,6 @@ class Game:
         and type like 'Neutral'""").fetchall()))
         self.board[random.randint(1, 7)][random.randint(1, 7)] = ["enemy", enemy[0], enemy[1], int(enemy[2]), enemy[3]]
         self.generate_escape_hatch()
-        for i in range(len(self.board)):
-            for j in range(len(self.board[i])):
-                print(self.board[j][i], end=", ")
-            print("\n")
 
     def interact(self, cell_x, cell_y, keys):
         if (self.board[cell_x][cell_y] == 0 or
